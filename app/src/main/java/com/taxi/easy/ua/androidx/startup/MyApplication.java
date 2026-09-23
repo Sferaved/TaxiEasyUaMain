@@ -32,7 +32,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.BuildConfig;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.exit.AnrActivity;
+import com.taxi.easy.ua.utils.exit.CrashScreenLauncher;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.keys.SecurePrefs;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
@@ -85,6 +85,10 @@ public class MyApplication extends MultiDexApplication {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        if (CrashScreenLauncher.isAnrProcess()) {
+            setupCrashHandler();
+            return;
+        }
         applicationStartElapsedMs = SystemClock.elapsedRealtime();
 
         try {
@@ -247,34 +251,27 @@ public class MyApplication extends MultiDexApplication {
 
     private void setupCrashHandler() {
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-            // Логируем крэш
-            FirebaseCrashlytics.getInstance().recordException(throwable);
-            Logger.e(getApplicationContext(), "CrashHandler", "Crash: " + throwable.getMessage());
-            Logger.e(getApplicationContext(), "CrashHandler", Log.getStackTraceString(throwable));
-
-            // Сохраняем стек крэша
-            sharedPreferencesHelperMain.saveValue("last_crash", Log.getStackTraceString(throwable));
-
-            // Пытаемся запустить AnrActivity
-            new Handler(Looper.getMainLooper()).post(() -> {
-                try {
-                    Intent intent = new Intent(getApplicationContext(), AnrActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    getApplicationContext().startActivity(intent);
-                } catch (Exception e) {
-                    Logger.e(getApplicationContext(),"CrashHandler", "Cannot start AnrActivity: " + e.getMessage());
-                    FirebaseCrashlytics.getInstance().recordException(e);
-
-                    // Если не удалось — показать уведомление или другой fallback
-                    showNotification(getApplicationContext());
+            try {
+                if (!CrashScreenLauncher.isAnrProcess()) {
+                    try {
+                        FirebaseCrashlytics.getInstance().recordException(throwable);
+                    } catch (Throwable ignored) {
+                    }
+                    try {
+                        String stack = Log.getStackTraceString(throwable);
+                        Logger.e(getApplicationContext(), "CrashHandler", "Crash: " + throwable.getMessage());
+                        Logger.e(getApplicationContext(), "CrashHandler", stack);
+                        if (sharedPreferencesHelperMain != null) {
+                            sharedPreferencesHelperMain.saveStringCommit("last_crash", stack);
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                    CrashScreenLauncher.showFromCrash(getApplicationContext());
                 }
-            });
-
-            // Через секунду убиваем процесс
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            } finally {
                 android.os.Process.killProcess(android.os.Process.myPid());
-                System.exit(1);
-            }, 1000);
+                System.exit(10);
+            }
         });
     }
 
@@ -332,15 +329,7 @@ public class MyApplication extends MultiDexApplication {
                         return;
                     }
 
-                    try {
-                        Intent intent = new Intent(context.getApplicationContext(), AnrActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        context.getApplicationContext().startActivity(intent);
-                    } catch (Exception e) {
-                        Logger.e(context, TAG, "Failed to start AnrActivity: " + e.getMessage());
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                        showNotification(context);
-                    }
+                    CrashScreenLauncher.show();
                 })
                 .start();
     }

@@ -12,8 +12,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import com.taxi.easy.ua.utils.exit.CrashScreenLauncher;
+import com.taxi.easy.ua.utils.exit.ServerOutageHelper;
+
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.TimeoutException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -39,6 +43,8 @@ public class ToJSONParser {
             HttpsURLConnection urlConnection = null;
             try {
                 urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setConnectTimeout(ServerOutageHelper.CONNECT_TIMEOUT_MS);
+                urlConnection.setReadTimeout(ServerOutageHelper.READ_TIMEOUT_MS);
                 urlConnection.setDoInput(true);
                 if (urlConnection.getResponseCode() == 200) {
                     InputStream in = new BufferedInputStream(urlConnection.getInputStream());
@@ -59,7 +65,7 @@ public class ToJSONParser {
         Future<String> asyncTaskFuture = Executors.newSingleThreadExecutor().submit(asyncTaskCallable);
 
         try {
-            String response = asyncTaskFuture.get(60, TimeUnit.SECONDS);
+            String response = asyncTaskFuture.get(ServerOutageHelper.WAIT_SECONDS, TimeUnit.SECONDS);
             if (response != null) {
                 if (response.equals("400")) {
                     costMap.put("order_cost", "0");
@@ -96,11 +102,15 @@ public class ToJSONParser {
                     }
                 }
             } else {
+                CrashScreenLauncher.show();
                 costMap.put("order_cost", "0");
                 costMap.put("message", "Сталася помилка");
             }
             return costMap;
         }  catch (Exception e) {
+            if (e instanceof TimeoutException || ServerOutageHelper.isServerUnreachable(e)) {
+                CrashScreenLauncher.show();
+            }
             FirebaseCrashlytics.getInstance().recordException(e);
             asyncTaskFuture.cancel(true);
             costMap.put("order_cost", "0");

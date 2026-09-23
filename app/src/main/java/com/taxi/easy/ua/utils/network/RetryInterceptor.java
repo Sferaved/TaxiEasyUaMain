@@ -5,6 +5,8 @@ import android.annotation.SuppressLint;
 import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.utils.exit.CrashScreenLauncher;
+import com.taxi.easy.ua.utils.exit.ServerOutageHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.IOException;
@@ -81,14 +83,14 @@ public class RetryInterceptor implements Interceptor {
                 if (!isNetworkConnected()) {
                     Logger.e(MyApplication.getContext(), TAG,
                             "Нет интернет соединения, повтор невозможен");
-                    throw e;
+                    throw fail(e);
                 }
 
                 // Последняя попытка - не повторяем
                 if (tryCount == MAX_RETRIES - 1) {
                     Logger.e(MyApplication.getContext(), TAG,
                             "DNS ошибка после " + MAX_RETRIES + " попыток: " + e.getMessage());
-                    throw e;
+                    throw fail(e);
                 }
 
                 Logger.w(MyApplication.getContext(), TAG,
@@ -106,7 +108,7 @@ public class RetryInterceptor implements Interceptor {
                 if (tryCount == MAX_RETRIES - 1) {
                     Logger.e(MyApplication.getContext(), TAG,
                             "Таймаут после " + MAX_RETRIES + " попыток: " + e.getMessage());
-                    throw e;
+                    throw fail(e);
                 }
 
                 Logger.w(MyApplication.getContext(), TAG,
@@ -124,7 +126,7 @@ public class RetryInterceptor implements Interceptor {
                 if (!isRetryableException(e) || tryCount == MAX_RETRIES - 1) {
                     Logger.e(MyApplication.getContext(), TAG,
                             String.format("Неустранимая ошибка после %d попыток: %s", tryCount + 1, e.getMessage()));
-                    throw e;
+                    throw fail(e);
                 }
 
                 Logger.w(MyApplication.getContext(), TAG,
@@ -145,9 +147,16 @@ public class RetryInterceptor implements Interceptor {
 
         // Все попытки исчерпаны
         if (lastException != null) {
-            throw lastException;
+            throw fail(lastException);
         }
         throw new IOException("Не удалось выполнить запрос после " + MAX_RETRIES + " попыток");
+    }
+
+    private IOException fail(IOException error) {
+        if (ServerOutageHelper.isServerUnreachable(error)) {
+            CrashScreenLauncher.show();
+        }
+        return error;
     }
 
     private long getDelayMs(int attempt) {
