@@ -98,6 +98,8 @@ public class CityCheckFragment extends Fragment {
     String countryState;
     SharedPreferencesHelper sharedPreferencesHelper;
     View root;
+    private final MovingCityButtonIndicator cityPressIndicator = new MovingCityButtonIndicator();
+    private View pressedCityButton;
 
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
@@ -166,6 +168,7 @@ public class CityCheckFragment extends Fragment {
 
 
         btn_city_1.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f) // Scale down to 90% on X
                     .scaleY(0.9f) // Scale down to 90% on Y
@@ -191,6 +194,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_2.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -214,6 +218,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_3.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -237,6 +242,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_4.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -260,6 +266,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_5.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -283,6 +290,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_6.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -306,6 +314,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_7.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -329,6 +338,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_8.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -352,6 +362,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_9.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -375,6 +386,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_10.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -398,6 +410,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_11.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -421,6 +434,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_12.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -444,6 +458,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_13.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -467,6 +482,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_14.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -490,6 +506,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_15.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -513,6 +530,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_16.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -536,6 +554,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_17.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -559,6 +578,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_18.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -582,6 +602,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_19.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -605,6 +626,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_20.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -628,6 +650,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_21.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -653,6 +676,7 @@ public class CityCheckFragment extends Fragment {
 
 
         btn_city_22.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -676,6 +700,7 @@ public class CityCheckFragment extends Fragment {
         });
 
         btn_city_23.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -1075,7 +1100,18 @@ public class CityCheckFragment extends Fragment {
 
  
 
+    @Override
+    public void onDestroyView() {
+        cityPressIndicator.release();
+        super.onDestroyView();
+    }
+
     private void lastAddressUser(String cityString) {
+        if (CityPressIndicatorPolicy.shouldShow(cityString)) {
+            cityPressIndicator.show(pressedCityButton);
+        } else {
+            cityPressIndicator.stop();
+        }
 
         String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
 

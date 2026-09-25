@@ -96,6 +96,8 @@ public class CityCheckActivity extends AppCompatActivity {
     String phoneNumber;
 
     String countryState;
+    private final MovingCityButtonIndicator cityPressIndicator = new MovingCityButtonIndicator();
+    private View pressedCityButton;
     SharedPreferencesHelper sharedPreferencesHelper;
 
     private void setupCityListScrolling() {
@@ -191,6 +193,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
 
         btn_city_1.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f) // Scale down to 90% on X
                     .scaleY(0.9f) // Scale down to 90% on Y
@@ -216,6 +219,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_2.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -239,6 +243,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_3.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -262,6 +267,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_4.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -285,6 +291,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_5.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -308,6 +315,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_6.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -331,6 +339,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_7.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -356,6 +365,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
 
         btn_city_8.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -379,6 +389,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_9.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -402,6 +413,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_10.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -425,6 +437,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_11.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -448,6 +461,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_12.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -471,6 +485,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_13.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -494,6 +509,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_14.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -517,6 +533,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_15.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -540,6 +557,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_16.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -563,6 +581,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_17.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -586,6 +605,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_18.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -609,6 +629,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_19.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -632,6 +653,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_20.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -655,6 +677,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_21.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -678,6 +701,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_22.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -701,6 +725,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_city_23.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -724,6 +749,7 @@ public class CityCheckActivity extends AppCompatActivity {
         });
 
         btn_exit.setOnClickListener(v -> {
+            pressedCityButton = v;
             v.animate()
                     .scaleX(0.9f)
                     .scaleY(0.9f)
@@ -1149,7 +1175,18 @@ public class CityCheckActivity extends AppCompatActivity {
 //        System.exit(0);
     }
 
+    @Override
+    protected void onDestroy() {
+        cityPressIndicator.release();
+        super.onDestroy();
+    }
+
     private void lastAddressUser(String cityString) {
+        if (CityPressIndicatorPolicy.shouldShow(cityString)) {
+            cityPressIndicator.show(pressedCityButton);
+        } else {
+            cityPressIndicator.stop();
+        }
 
         String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
 
