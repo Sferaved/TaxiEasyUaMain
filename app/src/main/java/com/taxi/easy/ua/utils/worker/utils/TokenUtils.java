@@ -31,8 +31,10 @@ public class TokenUtils {
         Logger.d(context, TAG, "sendToken token " + token);
 
         if (!email.isEmpty() && !email.equals("no_email")) {
-            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
-            ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
+            ApiServiceToken apiService = tokenApi(context);
+            if (apiService == null) {
+                return;
+            }
             String app = context.getString(R.string.application);
 
             Call<Void> call = apiService.sendToken(email, app, token, LocaleHelper.getLocale());
@@ -68,8 +70,10 @@ public class TokenUtils {
      */
     public static void registerInstallationToken(Context context, String token) {
         try {
-            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
-            ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
+            ApiServiceToken apiService = tokenApi(context);
+            if (apiService == null) {
+                return;
+            }
             String app = context.getString(R.string.application);
             String installationId = InstallationIdHelper.getOrCreateInstallationId();
 
@@ -94,8 +98,10 @@ public class TokenUtils {
     /** Планируем одно напоминание на завтра 07:00 Europe/Kyiv (на сервере). */
     public static void scheduleLoginReminderIfNeeded(Context context) {
         try {
-            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
-            ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
+            ApiServiceToken apiService = tokenApi(context);
+            if (apiService == null) {
+                return;
+            }
             String app = context.getString(R.string.application);
             String installationId = InstallationIdHelper.getOrCreateInstallationId();
 
@@ -120,8 +126,10 @@ public class TokenUtils {
     /** Отменяем напоминание после успешного входа. */
     public static void cancelLoginReminder(Context context) {
         try {
-            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
-            ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
+            ApiServiceToken apiService = tokenApi(context);
+            if (apiService == null) {
+                return;
+            }
             String app = context.getString(R.string.application);
             String installationId = InstallationIdHelper.getOrCreateInstallationId();
 
@@ -141,5 +149,22 @@ public class TokenUtils {
         } catch (Exception e) {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
+    }
+
+    /**
+     * Адрес сервера появляется после синхронизации. Пустая строка ломает Retrofit.
+     */
+    private static ApiServiceToken tokenApi(Context context) {
+        if (!hasReadyBaseUrl()) {
+            Logger.d(context, TAG, "token request: baseUrl not ready");
+            return null;
+        }
+        String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
+        return RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
+    }
+
+    static boolean hasReadyBaseUrl() {
+        return BaseUrlHelper.isValidHttpUrl(
+                BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain));
     }
 }

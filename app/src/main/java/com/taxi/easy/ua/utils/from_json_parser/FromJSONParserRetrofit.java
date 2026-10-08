@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
@@ -32,6 +33,8 @@ public class FromJSONParserRetrofit {
 
     // ✅ ДОБАВИТЬ: Флаг для отслеживания, отменен ли запрос
     private static boolean isCancelled = false;
+
+    private static final AtomicInteger requestGeneration = new AtomicInteger();
 
     // Интерфейс для описания запросов к API
     public interface ApiService {
@@ -87,10 +90,11 @@ public class FromJSONParserRetrofit {
 
         // ✅ Сбрасываем флаг отмены
         isCancelled = false;
+        final int generation = requestGeneration.incrementAndGet();
 
         executor.execute(() -> {
             // ✅ Проверяем, не был ли запрос отменен
-            if (isCancelled) {
+            if (generation != requestGeneration.get()) {
                 Log.d(TAG, "Request cancelled before execution");
                 return;
             }
@@ -113,20 +117,21 @@ public class FromJSONParserRetrofit {
 
             ApiService apiService = retrofit.create(ApiService.class);
 
-            // ✅ Сохраняем текущий запрос
-            currentCall = apiService.fetchData(urlString);
+            // Локальная ссылка: currentCall может обнулить следующий sendURL.
+            Call<ApiResponse> call = apiService.fetchData(urlString);
+            currentCall = call;
 
             try {
                 // ✅ Проверяем отмену перед выполнением
-                if (isCancelled) {
+                if (isResponseAbandoned(generation, call)) {
                     Log.d(TAG, "Request cancelled before execution");
                     return;
                 }
 
-                retrofit2.Response<ApiResponse> response = currentCall.execute();
+                retrofit2.Response<ApiResponse> response = call.execute();
 
                 // ✅ Проверяем, не был ли запрос отменен во время выполнения
-                if (isCancelled || currentCall.isCanceled()) {
+                if (isResponseAbandoned(generation, call)) {
                     Log.d(TAG, "Request was cancelled during execution");
                     return;
                 }
@@ -153,7 +158,7 @@ public class FromJSONParserRetrofit {
                 }
             } catch (Exception e) {
                 // ✅ Не логируем ошибку, если запрос был отменен
-                if (!isCancelled && (currentCall == null || !currentCall.isCanceled())) {
+                if (!isResponseAbandoned(generation, call)) {
                     Log.e(TAG, "Ошибка при выполнении запроса", e);
                     FirebaseCrashlytics.getInstance().recordException(e);
                     costMap.put("order_cost", "0");
@@ -162,14 +167,14 @@ public class FromJSONParserRetrofit {
                     Log.d(TAG, "Request cancelled, ignoring error");
                 }
             } finally {
-                // ✅ Очищаем текущий запрос, если это был он
-                if (currentCall != null && !isCancelled) {
+                // Снимаем только свой запрос, не затирая уже запущенный следующий.
+                if (currentCall == call) {
                     currentCall = null;
                 }
             }
 
             // ✅ Передаем результат только если запрос не был отменен
-            if (!isCancelled) {
+            if (generation == requestGeneration.get() && callback != null) {
                 handler.post(() -> callback.onComplete(costMap));
             }
 
@@ -180,11 +185,21 @@ public class FromJSONParserRetrofit {
     // ✅ ДОБАВИТЬ: Метод для отмены текущего запроса
     public static void cancelCurrentRequest() {
         isCancelled = true;
-        if (currentCall != null && !currentCall.isCanceled()) {
-            currentCall.cancel();
+        requestGeneration.incrementAndGet();
+        Call<ApiResponse> call = currentCall;
+        currentCall = null;
+        if (call != null && !call.isCanceled()) {
+            call.cancel();
             Log.d(TAG, "Current request cancelled");
         }
-        currentCall = null;
+    }
+
+    static int currentRequestGeneration() {
+        return requestGeneration.get();
+    }
+
+    static boolean isResponseAbandoned(int generation, Call<?> call) {
+        return generation != requestGeneration.get() || call == null || call.isCanceled();
     }
 
     // Интерфейс обратного вызова для получения результата

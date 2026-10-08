@@ -50,6 +50,20 @@ public class WfpUtilsResolveActiveRectokenTest {
     }
 
     @Test
+    public void getCurrentCity_whenCityInfoMissing_returnsEmpty() {
+        context.deleteDatabase(MainActivity.DB_NAME);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.close();
+
+        assertEquals("", WfpUtils.getCurrentCity(context));
+    }
+
+    @Test
+    public void getCurrentCity_readsStoredCity() {
+        assertEquals("Kyiv City", WfpUtils.getCurrentCity(context));
+    }
+
+    @Test
     public void normalizeActiveFlag_mapsKnownValues() {
         assertEquals("0", WfpUtils.normalizeActiveFlag(null));
         assertEquals("1", WfpUtils.normalizeActiveFlag("1"));

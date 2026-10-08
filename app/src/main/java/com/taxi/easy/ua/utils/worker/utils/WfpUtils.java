@@ -906,35 +906,57 @@ public class WfpUtils {
 
         SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        @SuppressLint("Recycle") Cursor c = db.query(table, null, null, null, null, null, null);
+        try {
 
-        if (c.moveToFirst()) {
+            if (!sqliteTableExists(db, table)) {
 
-            String str;
+                return list;
 
-            do {
+            }
 
-                str = "";
+            try (Cursor c = db.query(table, null, null, null, null, null, null)) {
 
-                for (String cn : c.getColumnNames()) {
+                if (c.moveToFirst()) {
 
-                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    do {
 
-                    list.add(CursorReadHelper.getString(c, cn));
+                        for (String cn : c.getColumnNames()) {
 
+                            list.add(CursorReadHelper.getString(c, cn));
 
+                        }
+
+                    } while (c.moveToNext());
 
                 }
 
+            }
 
+        } finally {
 
-            } while (c.moveToNext());
+            db.close();
 
         }
 
-        db.close();
-
         return list;
+
+    }
+
+
+
+    /** Application стартует раньше MainActivity, которая создаёт таблицы. */
+
+    private static boolean sqliteTableExists(SQLiteDatabase db, String table) {
+
+        try (Cursor cursor = db.rawQuery(
+
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=? LIMIT 1",
+
+                new String[]{table})) {
+
+            return cursor.moveToFirst();
+
+        }
 
     }
 
