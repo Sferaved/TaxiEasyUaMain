@@ -88,6 +88,7 @@ import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.city.CityLastAddressHelper;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.location.GpsGeocodeHelper;
+import com.taxi.easy.ua.utils.location.MapPickGeocodeGate;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
@@ -97,6 +98,9 @@ import com.taxi.easy.ua.utils.route.OsrmRouteHelper;
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.bonuspack.routing.Road;
+import org.osmdroid.events.MapListener;
+import org.osmdroid.events.ScrollEvent;
+import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -175,6 +179,14 @@ public class OpenStreetMapFragment extends Fragment {
     // Поток для маршрутов
     private static final Executor executor = Executors.newSingleThreadExecutor();
     private boolean userMovedMap = false;
+    /** Bumped on every new pan/zoom so a late reverse-geocode reply is dropped. */
+    private int mapPickGeneration;
+    private boolean mapGestureActive;
+    private boolean awaitingIdleGeocode;
+    private boolean mapIdleListenerAdded;
+    private final Handler mapIdleHandler = new Handler(Looper.getMainLooper());
+    private final Runnable geocodeIdleRunnable = this::geocodeSettledMapCenter;
+    private static final long MAP_IDLE_GEOCODE_DELAY_MS = 350L;
     /** Второй пин «по городу»/пустой — показываем только после сдвига или тапа по карте. */
     private boolean deferFinishPinUntilInteraction;
     private boolean finishPinRevealedByUser;
@@ -340,6 +352,9 @@ public class OpenStreetMapFragment extends Fragment {
     public void onPause() {
         super.onPause();
         stopLocationUpdates();
+        mapIdleHandler.removeCallbacks(geocodeIdleRunnable);
+        awaitingIdleGeocode = false;
+        mapPickGeneration++;
         map.onPause();
     }
 
@@ -538,19 +553,21 @@ public class OpenStreetMapFragment extends Fragment {
     // Настройка слушателя касаний карты
     @SuppressLint("ClickableViewAccessibility")
     private void setupMapTouchListener() {
+        ensureMapIdleListener();
         map.setOnTouchListener((v, event) -> {
-            int action = event.getAction();
+            int action = event.getActionMasked();
 
             // Передаем события в GestureDetector для обработки тапов (зум)
             if (gestureDetector != null) {
                 gestureDetector.onTouchEvent(event);
             }
 
-            if (action == MotionEvent.ACTION_DOWN) {
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
                 // Запоминаем начальные координаты
                 downX = event.getX();
                 downY = event.getY();
                 isMapDragging = false;
+                noteMapGestureStarted();
                 if (isMarkerEditMode()) {
                     updateCenterMarkerVisibility();
                 }
@@ -572,19 +589,11 @@ public class OpenStreetMapFragment extends Fragment {
                 }
                 updateZoomLevel();
 
-            } else if (action == MotionEvent.ACTION_UP) {
-                GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 if ("finishMarker".equals(markerType)) {
                     revealFinishPinFromUserInteraction();
-                    userMovedMap = true;
-                    applyFinishFromMapCenter(centerPoint);
-                } else if ("startMarker".equals(markerType)) {
-                    userMovedMap = true;
-                    applyStartFromMapCenter(centerPoint);
-                } else if (isMapDragging) {
-                    userMovedMap = true;
-                    handleTouchUp(centerPoint);
                 }
+                noteMapGestureEnded();
 
                 v.performClick();
                 return true;
@@ -592,6 +601,82 @@ public class OpenStreetMapFragment extends Fragment {
 
             return false;
         });
+    }
+
+    private void ensureMapIdleListener() {
+        if (map == null || mapIdleListenerAdded) {
+            return;
+        }
+        mapIdleListenerAdded = true;
+        map.addMapListener(new MapListener() {
+            @Override
+            public boolean onScroll(ScrollEvent event) {
+                if (!mapGestureActive && awaitingIdleGeocode) {
+                    armIdleGeocode();
+                }
+                return false;
+            }
+
+            @Override
+            public boolean onZoom(ZoomEvent event) {
+                if (mapGestureActive) {
+                    mapIdleHandler.removeCallbacks(geocodeIdleRunnable);
+                } else if (awaitingIdleGeocode) {
+                    armIdleGeocode();
+                }
+                return false;
+            }
+        });
+    }
+
+    /** A new finger-down or pinch drops every address reply that is already in flight. */
+    private void noteMapGestureStarted() {
+        mapGestureActive = true;
+        awaitingIdleGeocode = false;
+        mapIdleHandler.removeCallbacks(geocodeIdleRunnable);
+        invalidatePendingMapPick();
+    }
+
+    /** Geocode only after the map has actually stopped, so the last place wins. */
+    private void noteMapGestureEnded() {
+        mapGestureActive = false;
+        if (!isMarkerEditMode() && !isMapDragging) {
+            return;
+        }
+        userMovedMap = true;
+        armIdleGeocode();
+    }
+
+    private void armIdleGeocode() {
+        awaitingIdleGeocode = true;
+        mapIdleHandler.removeCallbacks(geocodeIdleRunnable);
+        mapIdleHandler.postDelayed(geocodeIdleRunnable, MAP_IDLE_GEOCODE_DELAY_MS);
+    }
+
+    private void invalidatePendingMapPick() {
+        mapPickGeneration++;
+    }
+
+    private void geocodeSettledMapCenter() {
+        if (!isAdded() || map == null || mapGestureActive || !awaitingIdleGeocode) {
+            return;
+        }
+        awaitingIdleGeocode = false;
+        GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
+        if (centerPoint == null) {
+            return;
+        }
+        if ("finishMarker".equals(markerType)) {
+            applyFinishFromMapCenter(centerPoint);
+        } else if ("startMarker".equals(markerType)) {
+            applyStartFromMapCenter(centerPoint);
+        } else if (isMapDragging) {
+            handleTouchUp(centerPoint);
+        }
+    }
+
+    private boolean isLatestMapPick(int generation) {
+        return MapPickGeocodeGate.shouldApplyGeocodeResult(generation, mapPickGeneration, mapGestureActive);
     }
 
     // Обработка окончания касания
@@ -1115,13 +1200,15 @@ public class OpenStreetMapFragment extends Fragment {
     // Обновление позиции на основе геолокации
     private void updateLocation() {
         GpsGeocodeHelper.reverseGeocode(ctx, startLat, startLan, address -> {
-            if (!isAdded()) {
+            if (!isAdded() || userMovedMap || mapGestureActive) {
                 return;
             }
             fromAddressString = address;
             updateMyPosition(startLat, startLan, fromAddressString, ctx);
             startPoint = new GeoPoint(startLat, startLan);
-            mapController.setCenter(startPoint);
+            if (MapPickGeocodeGate.shouldRecenterAfterGeocode(userMovedMap) && mapController != null) {
+                mapController.setCenter(startPoint);
+            }
             setMarker(startLat, startLan, fromAddressString, ctx, "1.");
             map.invalidate();
         });
@@ -1193,8 +1280,10 @@ public class OpenStreetMapFragment extends Fragment {
         }
 
         prepareMarker();
+        final int generation = ++mapPickGeneration;
         GpsGeocodeHelper.reverseGeocode(context, latitude, longitude, address -> {
-            if (!isAdded()) {
+            if (!isAdded() || !isLatestMapPick(generation)) {
+                hideSearchProgress();
                 return;
             }
             hideSearchProgress();
@@ -1207,11 +1296,11 @@ public class OpenStreetMapFragment extends Fragment {
                     "finishMarker".equals(markerType),
                     getString(R.string.startPoint),
                     getString(R.string.end_point_marker));
-            Logger.d(context, TAG, "reverseGeocode result: " + result);
+            Logger.d(context, TAG, "reverseGeocode result: " + result + " gen=" + generation);
             if ("startMarker".equals(markerType)) {
-                handleStartMarkerResponse(result, context);
+                handleStartMarkerResponse(result, context, generation, latitude, longitude);
             } else if ("finishMarker".equals(markerType)) {
-                handleFinishMarkerResponse(result, context);
+                handleFinishMarkerResponse(result, context, generation, latitude, longitude);
             }
         });
     }
@@ -1262,9 +1351,11 @@ public class OpenStreetMapFragment extends Fragment {
             }
 
             if ("startMarker".equals(markerType)) {
-                handleStartMarkerResponse(result, localizedContext);
+                final int generation = ++mapPickGeneration;
+                handleStartMarkerResponse(result, localizedContext, generation, startLat, startLan);
             } else if ("finishMarker".equals(markerType)) {
-                handleFinishMarkerResponse(result, localizedContext);
+                final int generation = ++mapPickGeneration;
+                handleFinishMarkerResponse(result, localizedContext, generation, finishLat, finishLan);
             }
 
         } else {
@@ -1274,10 +1365,10 @@ public class OpenStreetMapFragment extends Fragment {
     }
 
     // Обработка ответа для начального маркера
-    private void handleStartMarkerResponse(String result, Context localizedContext) {
+    private void handleStartMarkerResponse(String result, Context localizedContext,
+                                            int generation, double latitude, double longitude) {
         hideSearchProgress();
-        if (startPoint == null) {
-            Logger.e(ctx, TAG, "startPoint is null");
+        if (!isLatestMapPick(generation)) {
             return;
         }
 
@@ -1288,25 +1379,25 @@ public class OpenStreetMapFragment extends Fragment {
                 localizedContext.getString(R.string.end_point_marker));
         Logger.d(ctx, TAG, "fromAddressString set to: " + fromAddressString);
 
-        if (previousMarker != null) {
+        if (previousMarker != null && map != null) {
             map.getOverlays().remove(previousMarker);
         }
 
-        // ✅ ВЫЗЫВАЕМ ПРОВЕРКУ ГОРОДА ВМЕСТО ПРЯМОГО ОБНОВЛЕНИЯ
-        checkCityAndUpdateStartPoint(startLat, startLan, fromAddressString);
+        checkCityAndUpdateStartPoint(latitude, longitude, fromAddressString, generation);
 
         // Остальной код updateRouteSettings("start") будет выполнен в колбэке после подтверждения
     }
 
     // Обработка ответа для конечного маркера
-    private void handleFinishMarkerResponse(String result, Context localizedContext) {
+    private void handleFinishMarkerResponse(String result, Context localizedContext,
+                                             int generation, double latitude, double longitude) {
         hideSearchProgress();
-
-        if (endPoint == null) {
-            Logger.e(ctx, TAG, "endPoint is null, cannot handle finish marker");
-            FirebaseCrashlytics.getInstance().recordException(new Exception("endPoint is null in handleFinishMarkerResponse"));
+        if (!isLatestMapPick(generation)) {
             return;
         }
+        endPoint = new GeoPoint(latitude, longitude);
+        finishLat = latitude;
+        finishLan = longitude;
         if (map == null) {
             Logger.e(ctx, TAG, "MapView is null, cannot handle finish marker");
             FirebaseCrashlytics.getInstance().recordException(new Exception("MapView is null in handleFinishMarkerResponse"));
@@ -1493,15 +1584,28 @@ public class OpenStreetMapFragment extends Fragment {
         }
 
         updateRoutMarker(settings, map.getContext());
+        final int generation = mapPickGeneration;
         if (point.equals("start")) {
             updateMyPosition(startLat, startLan, fromAddressString, map.getContext());
-            new Handler(Looper.getMainLooper()).post(this::newShowRout);
-        } else if (point.equals("finish")) {
-            endPoint = new GeoPoint(finishLat, finishLan);
-            String finishLabel = toAddressString;
             new Handler(Looper.getMainLooper()).post(() -> {
-                setMarker(finishLat, finishLan, finishLabel, ctx, "2.");
-                redrawRouteToFinish(endPoint);
+                if (!isLatestMapPick(generation)) {
+                    return;
+                }
+                newShowRout();
+            });
+        } else if (point.equals("finish")) {
+            final double lat = finishLat;
+            final double lon = finishLan;
+            final String finishLabel = toAddressString;
+            endPoint = new GeoPoint(lat, lon);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (!isLatestMapPick(generation) || map == null) {
+                    return;
+                }
+                GeoPoint finishPoint = new GeoPoint(lat, lon);
+                endPoint = finishPoint;
+                setMarker(lat, lon, finishLabel, ctx, "2.");
+                redrawRouteToFinish(finishPoint);
             });
         }
         Logger.d(ctx, TAG, "Updated route settings, point=" + point);
@@ -2144,7 +2248,7 @@ public class OpenStreetMapFragment extends Fragment {
                 getString(R.string.end_point_marker));
     }
 
-    private void checkCityAndUpdateStartPoint(double latitude, double longitude, String address) {
+    private void checkCityAndUpdateStartPoint(double latitude, double longitude, String address, int generation) {
         Logger.d(ctx, TAG, "checkCityAndUpdateStartPoint: lat=" + latitude + ", lon=" + longitude + ", address=" + address);
 
         // Проверка, что фрагмент ещё активен
@@ -2170,6 +2274,10 @@ public class OpenStreetMapFragment extends Fragment {
                 Logger.d(ctx, TAG, "Fragment detached or map null during city callback");
                 return;
             }
+            if (!isLatestMapPick(generation)) {
+                Logger.d(ctx, TAG, "Ignoring stale city callback gen=" + generation);
+                return;
+            }
 
             Logger.d(ctx, TAG, "═══════════════════════════════════════════");
             Logger.d(ctx, TAG, "🏁 CityCheckCallback ВЫЗВАН (OSM)");
@@ -2182,7 +2290,7 @@ public class OpenStreetMapFragment extends Fragment {
                 Logger.d(ctx, TAG, "✅ Обновляем позицию");
 
                 Consumer<String> applyAddress = resolvedAddress -> {
-                    if (!isAdded() || getActivity() == null || map == null) {
+                    if (!isAdded() || getActivity() == null || map == null || !isLatestMapPick(generation)) {
                         return;
                     }
                     startLat = latitude;
@@ -2194,15 +2302,14 @@ public class OpenStreetMapFragment extends Fragment {
                     setCityAppbar();
 
                     new Handler(Looper.getMainLooper()).post(() -> {
-                        if (map != null && isAdded()) {
+                        if (map != null && isAdded() && isLatestMapPick(generation)) {
                             if (startMarkerObj != null) {
                                 map.getOverlays().remove(startMarkerObj);
                             }
                             removeTextOverlay("startMarker");
                             setMarker(latitude, longitude, resolvedAddress, ctx, "1.");
                             map.invalidate();
-                            mapController.setCenter(startPoint);
-                            Logger.d(ctx, TAG, "Marker and map updated successfully");
+                            Logger.d(ctx, TAG, "Marker updated without recentering");
                             updateRouteAfterStartPointChange();
                         }
                     });
