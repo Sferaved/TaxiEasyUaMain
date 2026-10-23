@@ -3,6 +3,7 @@ package com.taxi.easy.ua.utils.download;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -17,6 +18,10 @@ public class AppUpdateReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
         if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action) || Intent.ACTION_BOOT_COMPLETED.equals(action)) {
+            if (!AppUpdateLaunchPolicy.shouldAutoStartMainActivity(Build.VERSION.SDK_INT)) {
+                Logger.d(context, TAG, "Skip MainActivity auto-start after update or boot");
+                return;
+            }
             Logger.d(context, TAG, "App updated or device rebooted, starting MainActivity");
             Intent mainIntent = new Intent(context, MainActivity.class);
             mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
