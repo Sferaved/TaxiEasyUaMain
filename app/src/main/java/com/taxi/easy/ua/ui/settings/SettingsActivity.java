@@ -106,10 +106,10 @@ public class SettingsActivity extends AppCompatActivity {
             // Устанавливаем пользовательский макет в качестве заголовка Action Bar
             getSupportActionBar().setDisplayShowCustomEnabled(true);
             getSupportActionBar().setDisplayShowTitleEnabled(false); // Отключаем стандартный заголовок
-            getSupportActionBar().setCustomView(R.layout.custom_action_bar_title);
-
-            // Доступ к TextView в пользовательском заголовке
-            View customView = getSupportActionBar().getCustomView();
+            View customView = getLayoutInflater().inflate(R.layout.custom_action_bar_title, null);
+            getSupportActionBar().setCustomView(customView, new androidx.appcompat.app.ActionBar.LayoutParams(
+                    androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT,
+                    androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT));
             TextView titleTextView = customView.findViewById(R.id.action_bar_title);
             ImageButton button1 = customView.findViewById(R.id.button1);
 

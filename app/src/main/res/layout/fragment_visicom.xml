@@ -15,7 +15,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="12dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/visicomMain"
@@ -27,16 +28,26 @@
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/gpsbut"
-                    android:layout_width="105dp"
-                    android:layout_height="42dp"
-                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
                     android:background="@drawable/buttons_green_cross"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
                     android:text="@string/change"
-                    android:visibility="visible"
-                    android:textSize="20sp"
+                    android:textAllCaps="false"
                     android:textColor="@color/black"
+                    android:textSize="13sp"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toBottomOf="@+id/textfrom"
                     app:layout_constraintEnd_toEndOf="@+id/textGeo"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toTopOf="@+id/textfrom" />
 
                 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
                     android:id="@+id/swipeRefreshLayout"
@@ -215,13 +226,18 @@
                     android:id="@+id/textfrom"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
                     android:fontFamily="@font/light"
+                    android:gravity="center_vertical"
+                    android:minHeight="32dp"
                     android:text="@string/from_text"
                     android:textColor="#9DA0A8"
-                    android:layout_marginTop="-14dp"
                     android:textSize="14sp"
+                    app:layout_constraintEnd_toStartOf="@+id/gpsbut"
+                    app:layout_constraintHorizontal_bias="0"
                     app:layout_constraintStart_toStartOf="@+id/textGeo"
-                    app:layout_constraintTop_toBottomOf="@+id/gpsbut" />
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/change"
@@ -348,9 +364,11 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/linear_layout_buttons"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
                     android:layout_marginTop="4dp"
+                    android:layout_marginEnd="8dp"
                     android:orientation="horizontal"
                     android:visibility="gone"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -360,12 +378,15 @@
 
                     <FrameLayout
                         android:id="@+id/frame_1"
-                        android:layout_width="110dp"
-                        android:layout_height="100dp"
+                        android:layout_width="0dp"
+                        android:layout_height="88dp"
                         android:layout_marginStart="4dp"
                         android:background="@drawable/buttons"
                         android:clickable="true"
                         android:focusable="true"
+                        app:layout_constraintEnd_toStartOf="@+id/frame_2"
+                        app:layout_constraintHorizontal_chainStyle="spread"
+                        app:layout_constraintHorizontal_weight="1"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent">
 
@@ -375,30 +396,41 @@
                             android:layout_height="match_parent"
                             android:layout_gravity="center"
                             android:background="@null"
-                            android:padding="0dp"
+                            android:paddingTop="2dp"
+                            android:paddingBottom="16dp"
                             android:scaleType="fitCenter"
                             android:src="@drawable/button_image_button1_sm" />
 
                         <TextView
                             android:id="@+id/text_1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_horizontal|bottom"
-                            android:layout_marginBottom="4dp"
+                            android:layout_width="match_parent"
+                            android:layout_height="16dp"
+                            android:layout_gravity="bottom"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp"
+                            android:layout_marginBottom="2dp"
+                            android:autoSizeMaxTextSize="12sp"
+                            android:autoSizeMinTextSize="8sp"
+                            android:autoSizeStepGranularity="1sp"
+                            android:autoSizeTextType="uniform"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
                             android:text="@string/sedan"
                             android:textColor="#D9D9D9"
-                            android:textSize="10sp"
                             tools:ignore="SmallSp" />
                     </FrameLayout>
 
                     <FrameLayout
                         android:id="@+id/frame_2"
-                        android:layout_width="110dp"
-                        android:layout_height="100dp"
+                        android:layout_width="0dp"
+                        android:layout_height="88dp"
                         android:layout_marginStart="4dp"
                         android:background="@drawable/buttons"
                         android:clickable="true"
                         android:focusable="true"
+                        app:layout_constraintEnd_toStartOf="@+id/frame_3"
+                        app:layout_constraintHorizontal_weight="1"
                         app:layout_constraintStart_toEndOf="@+id/frame_1"
                         app:layout_constraintTop_toTopOf="parent">
 
@@ -409,30 +441,40 @@
                             android:layout_gravity="center"
                             android:background="@null"
                             android:importantForAccessibility="no"
-                            android:padding="0dp"
+                            android:paddingTop="2dp"
+                            android:paddingBottom="16dp"
                             android:scaleType="fitCenter"
                             android:src="@drawable/button_image_button2_sm" />
 
                         <TextView
                             android:id="@+id/text_2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_horizontal|bottom"
-                            android:layout_marginBottom="4dp"
+                            android:layout_width="match_parent"
+                            android:layout_height="16dp"
+                            android:layout_gravity="bottom"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp"
+                            android:layout_marginBottom="2dp"
+                            android:autoSizeMaxTextSize="12sp"
+                            android:autoSizeMinTextSize="8sp"
+                            android:autoSizeStepGranularity="1sp"
+                            android:autoSizeTextType="uniform"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
                             android:text="@string/universal"
-                            android:textColor="#D9D9D9"
-                            android:textSize="10sp" />
+                            android:textColor="#D9D9D9" />
                     </FrameLayout>
 
                     <FrameLayout
                         android:id="@+id/frame_3"
-                        android:layout_width="110dp"
-                        android:layout_height="100dp"
+                        android:layout_width="0dp"
+                        android:layout_height="88dp"
                         android:layout_marginStart="4dp"
                         android:background="@drawable/buttons"
                         android:clickable="true"
                         android:focusable="true"
                         app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_weight="1"
                         app:layout_constraintStart_toEndOf="@+id/frame_2"
                         app:layout_constraintTop_toTopOf="parent">
 
@@ -442,19 +484,28 @@
                             android:layout_height="match_parent"
                             android:layout_gravity="center"
                             android:background="@null"
-                            android:padding="0dp"
+                            android:paddingTop="2dp"
+                            android:paddingBottom="16dp"
                             android:scaleType="fitCenter"
                             android:src="@drawable/button_image_button3_sm" />
 
                         <TextView
                             android:id="@+id/text_3"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_horizontal|bottom"
-                            android:layout_marginBottom="4dp"
+                            android:layout_width="match_parent"
+                            android:layout_height="16dp"
+                            android:layout_gravity="bottom"
+                            android:layout_marginStart="2dp"
+                            android:layout_marginEnd="2dp"
+                            android:layout_marginBottom="2dp"
+                            android:autoSizeMaxTextSize="12sp"
+                            android:autoSizeMinTextSize="8sp"
+                            android:autoSizeStepGranularity="1sp"
+                            android:autoSizeTextType="uniform"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
                             android:text="@string/bus"
                             android:textColor="#D9D9D9"
-                            android:textSize="10sp"
                             tools:ignore="SmallSp" />
                     </FrameLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>

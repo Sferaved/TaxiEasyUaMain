@@ -1,1 +1,2 @@
-• Login dialog is readable on the dark theme
+• The by GPS button is fully visible and no longer covers the city name
+• The minibus label fits on one line

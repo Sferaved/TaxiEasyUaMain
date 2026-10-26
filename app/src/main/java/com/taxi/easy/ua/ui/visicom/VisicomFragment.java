@@ -671,10 +671,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             if (actionBar != null) {
                 actionBar.setDisplayShowCustomEnabled(true);
                 actionBar.setDisplayShowTitleEnabled(false);
-                actionBar.setCustomView(R.layout.custom_action_bar_title);
-
-                // Доступ к элементам кастомного ActionBar
-                View customView = actionBar.getCustomView();
+                View customView = getLayoutInflater().inflate(R.layout.custom_action_bar_title, null);
+                actionBar.setCustomView(customView, new androidx.appcompat.app.ActionBar.LayoutParams(
+                        androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT,
+                        androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT));
                 TextView titleTextView = customView.findViewById(R.id.action_bar_title);
                 ImageButton button1 = customView.findViewById(R.id.button1);
 

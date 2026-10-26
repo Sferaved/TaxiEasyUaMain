@@ -1,33 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:gravity="center"
+    android:gravity="center_vertical"
     android:orientation="horizontal">
 
     <TextView
         android:id="@+id/action_bar_title"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:ellipsize="end"
+        android:focusable="true"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
         android:text="Your Title"
         android:textColor="@android:color/white"
-        android:textSize="20sp"
-        android:gravity="center"
-        android:clickable="true"
-        android:focusable="true"/>
+        android:textSize="16sp" />
 
     <ImageButton
         android:id="@+id/button1"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:background="@null"
-        android:padding="0dp"
-
+        android:padding="2dp"
         android:scaleType="fitCenter"
         android:src="@drawable/down_arrow_white"
         tools:ignore="ContentDescription" />
-
 
 </LinearLayout>

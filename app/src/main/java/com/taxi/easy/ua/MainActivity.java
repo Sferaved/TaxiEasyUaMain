@@ -508,10 +508,10 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowCustomEnabled(true);
             getSupportActionBar().setDisplayShowTitleEnabled(false);
-            getSupportActionBar().setCustomView(R.layout.custom_action_bar_title);
-
-            // Доступ к элементам кастомного Action Bar
-            View customView = getSupportActionBar().getCustomView();
+            View customView = getLayoutInflater().inflate(R.layout.custom_action_bar_title, null);
+            getSupportActionBar().setCustomView(customView, new androidx.appcompat.app.ActionBar.LayoutParams(
+                    androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT,
+                    androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT));
             TextView titleTextView = customView.findViewById(R.id.action_bar_title);
             button1 = customView.findViewById(R.id.button1);
 
