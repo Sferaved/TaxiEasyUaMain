@@ -3574,6 +3574,9 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
 
                 verificationDialog = builder.create();
                 verificationDialog.show();
+                if (verificationDialog.getWindow() != null) {
+                    verificationDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+                }
 
                 // Кнопка Старт
                 btnPositive.setOnClickListener(v -> {
@@ -3633,6 +3636,9 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
 
             AlertDialog errorDialog = builder.create();
             errorDialog.show();
+            if (errorDialog.getWindow() != null) {
+                errorDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            }
 
             // Кнопка "Повторить"
             btnPositive.setOnClickListener(v -> {
