@@ -7,6 +7,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.taxi.easy.ua.utils.exit.CrashScreenLauncher;
 import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 
@@ -48,7 +49,7 @@ public final class MantisBugReportSender {
                               @NonNull String problemSummary,
                               @NonNull String fullDescription,
                               @Nullable File logFile) throws Exception {
-        MantisConfig mantisConfig = new FirestoreHelper(context).fetchMantisConfigBlocking();
+        MantisConfig mantisConfig = loadMantisConfig(context);
         String issueSummary = MantisIssueUrlHelper.buildIssueSummary(appLabel, versionName, problemSummary);
         File attachment = (logFile != null && logFile.exists() && logFile.length() > 0) ? logFile : null;
 
@@ -61,6 +62,18 @@ public final class MantisBugReportSender {
 
         String issueUrl = MantisIssueUrlHelper.buildIssueViewUrl(mantisConfig.baseUrl, issueId);
         return new Result(issueId, issueUrl);
+    }
+
+    @NonNull
+    private static MantisConfig loadMantisConfig(@NonNull Context context) throws Exception {
+        if (CrashScreenLauncher.isAnrProcess()) {
+            MantisConfig cached = MantisConfigStore.read(context.getFilesDir());
+            if (cached == null) {
+                throw new Exception("Кеш Mantis для екрана помилки порожній");
+            }
+            return cached;
+        }
+        return new FirestoreHelper(context).fetchMantisConfigBlocking();
     }
 
     @NonNull

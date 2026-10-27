@@ -143,6 +143,11 @@ public class MyApplication extends MultiDexApplication {
                 getUtaxKey();
                 baseUrlDefaultsFromFb();
                 baseUrlFromFb();
+                try {
+                    helper.fetchMantisConfigBlocking();
+                } catch (Exception mantisCacheError) {
+                    Logger.e(this, TAG, "Mantis config cache skipped: " + mantisCacheError.getMessage());
+                }
             } catch (Exception e) {
                 Logger.e(this, TAG, "Async initialization failed: " + e);
                 FirebaseCrashlytics.getInstance().recordException(e);
