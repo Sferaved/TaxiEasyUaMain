@@ -7,16 +7,20 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentAnrBinding;
+import com.taxi.easy.ua.utils.bugreport.CrashScreenBugReportSender;
+import com.taxi.easy.ua.utils.bugreport.mantis.MantisBugReportSender;
 import com.taxi.easy.ua.utils.connect.NetworkMonitor;
-import com.taxi.easy.ua.utils.log.LogEmailSender;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 
 import java.util.ArrayList;
@@ -59,14 +63,49 @@ public class AnrActivity extends AppCompatActivity {
             finish();
         });
 
-        btnEmailAdmin.setOnClickListener(v -> {
-            new LogEmailSender(this).sendLog();
-        });
+        btnEmailAdmin.setOnClickListener(v -> sendCrashReport(btnEmailAdmin));
 
         btn_exit.setOnClickListener(v -> closeApplication());
 
         networkMonitor = new NetworkMonitor(this);
         networkMonitor.startMonitoring();
+    }
+
+    private void sendCrashReport(AppCompatButton button) {
+        button.setEnabled(false);
+        Toast.makeText(this, R.string.sending_report, Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                MantisBugReportSender.DeliveryResult deliveryResult = CrashScreenBugReportSender.send(this);
+                runOnUiThread(() -> showDeliveryResult(deliveryResult));
+            } catch (Exception e) {
+                Logger.e(this, "AnrActivity", "Crash report send failed: " + e.getMessage());
+                runOnUiThread(() -> Toast.makeText(
+                        this,
+                        getString(R.string.error_sending, e.getMessage()),
+                        Toast.LENGTH_LONG
+                ).show());
+            } finally {
+                runOnUiThread(() -> button.setEnabled(true));
+            }
+        }).start();
+    }
+
+    private void showDeliveryResult(MantisBugReportSender.DeliveryResult deliveryResult) {
+        if (isFinishing()) {
+            return;
+        }
+        if (deliveryResult.usedMantis) {
+            Toast.makeText(this, getString(R.string.sent_to_mantis, deliveryResult.issueId), Toast.LENGTH_LONG).show();
+        } else if (deliveryResult.logFileSizeKb > 0) {
+            Toast.makeText(
+                    this,
+                    getString(R.string.sent_to_telegram_with_logs, deliveryResult.logFileSizeKb),
+                    Toast.LENGTH_LONG
+            ).show();
+        } else {
+            Toast.makeText(this, R.string.sent_to_telegram, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void closeApplication() {

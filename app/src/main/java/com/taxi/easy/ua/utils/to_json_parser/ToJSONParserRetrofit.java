@@ -210,6 +210,10 @@ public class ToJSONParserRetrofit {
 
                 @Override
                 public void onFailure(@NonNull Call<JsonResponse> call, @NonNull Throwable t) {
+                    if (!OrderChannelHttpFailure.shouldShowNetworkErrorToast(eventReceived, call.isCanceled())) {
+                        Log.d("API_CALL", "HTTP отменён после uid из Centrifugo, тост не показываем");
+                        return;
+                    }
                     showNetworkErrorToast();
                 }
             });

@@ -86,6 +86,11 @@ public class MyApplication extends MultiDexApplication {
         super.onCreate();
         instance = this;
         if (CrashScreenLauncher.isAnrProcess()) {
+            try {
+                FirebaseApp.initializeApp(this);
+                LocaleHelper.applyAppLocale(this);
+            } catch (Throwable ignored) {
+            }
             setupCrashHandler();
             return;
         }
