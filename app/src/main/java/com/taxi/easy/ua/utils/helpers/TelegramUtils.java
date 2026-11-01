@@ -5,6 +5,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.io.File;
@@ -23,7 +24,6 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class TelegramUtils {
 
-    private static final String TOKEN = "7012302264:AAEWLQZsDJ0I2GkuhjrPuzPduoBl8u6wIps";
     private static final String CHAT_ID = "120352595";
     private static final String CHAT_ID_TAXI = "1379298637";
 
@@ -32,11 +32,36 @@ public class TelegramUtils {
 
     public static void sendBugReportCreatedNotification(String message) {
         Log.d(TAG, "Sending Mantis bug report notification to Telegram...");
-        sendTextNotification(message);
+        loadBotToken(token -> sendTextNotification(token, message));
     }
 
     public static void sendErrorToTelegram(String errorMessage, @Nullable String logFilePath) {
         Log.d(TAG, "Started sending error message to Telegram...");
+        loadBotToken(token -> deliverError(token, errorMessage, logFilePath));
+    }
+
+    private static void loadBotToken(BotTokenCallback callback) {
+        FirebaseFirestore.getInstance()
+                .collection("keys")
+                .document("telegram_bot")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    String token = snapshot != null ? snapshot.getString("bot_token") : null;
+                    if (token == null || token.trim().isEmpty()) {
+                        Log.e(TAG, "keys/telegram_bot field bot_token is missing");
+                        return;
+                    }
+                    callback.onToken(token.trim());
+                })
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "Failed to load keys/telegram_bot: " + e.getMessage()));
+    }
+
+    private interface BotTokenCallback {
+        void onToken(String token);
+    }
+
+    private static void deliverError(String token, String errorMessage, @Nullable String logFilePath) {
 
         // Обрезаем сообщение для caption
         String caption = errorMessage;
@@ -56,7 +81,7 @@ public class TelegramUtils {
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.telegram.org/bot" + TOKEN + "/")
+                .baseUrl("https://api.telegram.org/bot" + token + "/")
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
@@ -193,7 +218,7 @@ public class TelegramUtils {
         }
     }
 
-    private static void sendTextNotification(String message) {
+    private static void sendTextNotification(String token, String message) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor())
                 .connectTimeout(60, TimeUnit.SECONDS)
@@ -202,7 +227,7 @@ public class TelegramUtils {
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.telegram.org/bot" + TOKEN + "/")
+                .baseUrl("https://api.telegram.org/bot" + token + "/")
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
