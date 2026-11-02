@@ -196,6 +196,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private static final String PREF_COST_RECALC_FROM_FINISH = "cost_recalc_from_finish";
     private static final String PREF_COST_PREVIEW_DISPLAY = "cost_preview_display";
     private TextView textCostRecalcStatus;
+    private final CostRequestGate costRequestGate = new CostRequestGate();
+    private boolean orderCostObserverAttached;
     @SuppressLint("StaticFieldLeak")
     public static TextView textViewTo;
     @SuppressLint("StaticFieldLeak")
@@ -1363,6 +1365,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     /** Если кнопки заказа видны, а поле цены пустое — кэш или повторный расчёт. */
     private void ensureRouteCostVisible() {
+        if (costRequestGate.isEntered()) {
+            return;
+        }
         if (!isAdded() || binding == null || googlePayOrderHoldInProgress) {
             return;
         }
@@ -1708,31 +1713,35 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         // Отмена всех запросов
         RetrofitClient.getInstance().cancelAllRequests();
 
+        orderCostObserverAttached = false;
         // Очистка binding
         binding = null;
 
         super.onDestroyView();
     }
 
-    @SuppressLint("Range")
     private static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c.moveToFirst()) {
-            String str;
-            do {
-                str = "";
-                for (String cn : c.getColumnNames()) {
-                    String value = CursorReadHelper.getString(c, cn);
-                    str = str.concat(cn + " = " + value + "; ");
-                    list.add(value);
+        Cursor c = null;
+        try {
+            c = database.query(table, null, null, null, null, null, null);
+            if (c.moveToFirst()) {
+                do {
+                    for (String cn : c.getColumnNames()) {
+                        list.add(CursorReadHelper.getString(c, cn));
+                    }
+                } while (c.moveToNext());
+            }
+        } finally {
+            try {
+                if (c != null) {
+                    c.close();
                 }
-
-            } while (c.moveToNext());
+            } finally {
+                database.close();
+            }
         }
-        database.close();
-        c.close();
         return list;
     }
 
@@ -4177,6 +4186,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private void requestVisicomCost(String source) {
+        if (costRequestGate.isEntered()) {
+            Logger.d(context, TAG, "visicomCost пропущен (повторный вход), источник: " + source);
+            return;
+        }
         if (!isAdded() || context == null) {
             return;
         }
@@ -4956,6 +4969,18 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private void visicomCost() throws MalformedURLException {
+        if (!costRequestGate.tryEnter()) {
+            Logger.d(context, TAG, "visicomCost пропущен (повторный вход)");
+            return;
+        }
+        try {
+            visicomCostBody(false);
+        } finally {
+            costRequestGate.exit();
+        }
+    }
+
+    private void visicomCostBody(boolean afterNormalize) throws MalformedURLException {
         Logger.d(context, TAG, "=== visicomCost() started ===");
         restoreDestinationFieldFromDatabase();
         constr2.setVisibility(GONE);
@@ -5019,19 +5044,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             }
             requestCostFromServer(start, finish);
         } else if ("run".equals(cityCheckActivity) && originLatitude != 0.0) {
-            if (!hasActiveOrderSession()) {
+            if (!afterNormalize && !hasActiveOrderSession()) {
                 normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
             }
-            if (isRouteReadyForCostFromDatabase()) {
-                try {
-                    visicomCost();
-                } catch (MalformedURLException e) {
-                    Logger.e(context, TAG, "visicomCost retry: " + e.getMessage());
-                    hideCostCalculationProgress();
-                    if (isAdded()) {
-                        btnVisible(VISIBLE);
-                    }
-                }
+            if (!afterNormalize && isRouteReadyForCostFromDatabase()) {
+                visicomCostBody(true);
                 return;
             }
             if (tryApplyCachedAroundCityCost()) {
@@ -5118,35 +5135,44 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             }
         };
 
-        orderViewModel.getOrderCost().observe(getViewLifecycleOwner(), cost -> {
-            if (cost != null && cost.equals(lastCost)) {
-                return;
-            }
-            lastCost = cost;
+        ensureOrderCostObserver();
+    }
 
-            Logger.d(context, TAG, "Updated order_cost: " + cost);
+    private void ensureOrderCostObserver() {
+        if (orderCostObserverAttached) {
+            return;
+        }
+        orderCostObserverAttached = true;
+        orderViewModel.getOrderCost().observe(getViewLifecycleOwner(), this::onRealtimeOrderCost);
+    }
 
-            if (!hasDisplayableCost(cost)) {
-                showCostCalculationProgress();
-                if (costHandler != null && reserveRunnable != null) {
-                    costHandler.postDelayed(reserveRunnable, 10_000);
-                }
-                return;
-            }
+    private void onRealtimeOrderCost(String cost) {
+        if (cost != null && cost.equals(lastCost)) {
+            return;
+        }
+        lastCost = cost;
 
+        Logger.d(context, TAG, "Updated order_cost: " + cost);
+
+        if (!hasDisplayableCost(cost)) {
+            showCostCalculationProgress();
             if (costHandler != null && reserveRunnable != null) {
-                costHandler.removeCallbacks(reserveRunnable);
+                costHandler.postDelayed(reserveRunnable, 10_000);
             }
+            return;
+        }
 
-            if (binding != null && !googlePayOrderHoldInProgress) {
-                Logger.d(context, ADDR_GUARD, "costObserver: sync UI from ROUT_MARKER after cost=" + cost);
-                syncAddressFieldsFromRouteMarker();
-                applyDiscountAndUpdateUI(cost, context);
-            } else if (hasDisplayableCost(cost)) {
-                storeDeferredCostWhileGPayHold(cost);
-            }
-        });
+        if (costHandler != null && reserveRunnable != null) {
+            costHandler.removeCallbacks(reserveRunnable);
+        }
 
+        if (binding != null && !googlePayOrderHoldInProgress) {
+            Logger.d(context, ADDR_GUARD, "costObserver: sync UI from ROUT_MARKER after cost=" + cost);
+            syncAddressFieldsFromRouteMarker();
+            applyDiscountAndUpdateUI(cost, context);
+        } else if (hasDisplayableCost(cost)) {
+            storeDeferredCostWhileGPayHold(cost);
+        }
     }
 
 
