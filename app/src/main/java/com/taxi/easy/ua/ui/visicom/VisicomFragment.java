@@ -2579,6 +2579,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             MyPhoneDialogFragment bottomSheetDialogFragment = MyPhoneDialogFragment.newInstance("visicom");
             bottomSheetDialogFragment.show(fragmentManager, "MyPhoneDialogFragment");
             progressBar.setVisibility(GONE);
+        } else if (PaymentTypeHelper.isCardPayment(pay_method)
+                && getCheckRectoken(ctx).isEmpty()) {
+            showNoSavedCardSheet();
         } else {
 
             constraintLayoutVisicomMain.setVisibility(GONE);
@@ -2628,9 +2631,17 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             }
             EarlyOrderNavigationHelper.markSubmitStarted(ctx, pay_method, displayCost);
 
-            if ("wfp_payment".equals(pay_method)) {
+            if (PaymentTypeHelper.isCardPayment(pay_method)) {
                 String activeCardId = getCheckRectoken(ctx);
-                if (!activeCardId.isEmpty()) {
+                if (activeCardId.isEmpty()) {
+                    constraintLayoutVisicomMain.setVisibility(VISIBLE);
+                    if (constraintLayoutVisicomFinish != null) {
+                        constraintLayoutVisicomFinish.setVisibility(GONE);
+                    }
+                    showNoSavedCardSheet();
+                    return;
+                }
+                if ("wfp_payment".equals(pay_method)) {
                     WfpUtils.syncActiveCardBeforeOrderOffMain(ctx, activeCardId, () -> {
                         if (isAdded() && getActivity() != null) {
                             dispatchOrderFinishedRequest(ctx);
@@ -6333,6 +6344,17 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         return getString(R.string.google_pay_hold_failed_message);
     }
 
+    /** Карта выбрана, но в списке нет привязанной карты — заказ не отправлять. */
+    private void showNoSavedCardSheet() {
+        btnVisible(VISIBLE);
+        if (!isAdded()) {
+            return;
+        }
+        MyBottomSheetErrorFragment sheet =
+                new MyBottomSheetErrorFragment(getString(R.string.no_cards_info));
+        sheet.show(getParentFragmentManager(), "no_cards_info");
+    }
+
     private void googleVerifyAccount() {
 
         FirebaseConsentManager consentManager = new FirebaseConsentManager(context);
@@ -6346,18 +6368,18 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                         if(!verifyOrder()) {
                             if ("google_pay_payment".equals(pay_method)) {
                                 startGooglePayHoldBeforeOrder();
+                            } else if (PaymentTypeHelper.isCardPayment(pay_method)
+                                    && getCheckRectoken(context).isEmpty()) {
+                                showNoSavedCardSheet();
                             } else {
                                 orderFinished();
                             }
                         } else {
-                            if (pay_method.equals("wfp_payment")) {
+                            if (PaymentTypeHelper.isCardPayment(pay_method)) {
                                 String rectoken = getCheckRectoken(context);
                                 Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
                                 if (rectoken.isEmpty()) {
-                                    String message = context.getString(R.string.no_cards_info);
-                                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                                    bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-
+                                    showNoSavedCardSheet();
                                 } else {
                                     orderFinished();
                                 }

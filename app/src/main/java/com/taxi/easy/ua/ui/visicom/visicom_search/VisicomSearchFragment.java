@@ -924,6 +924,7 @@ public class VisicomSearchFragment extends Fragment {
             
             text_toError.setVisibility(View.GONE);
             root.findViewById(R.id.textwhere).setVisibility(View.GONE);
+            root.findViewById(R.id.num1).setVisibility(View.GONE);
             root.findViewById(R.id.num2).setVisibility(View.GONE);
             gpsbut.setVisibility(GONE);
         }
@@ -931,6 +932,7 @@ public class VisicomSearchFragment extends Fragment {
             oldAddresses("finish");
             root.findViewById(R.id.textfrom).setVisibility(View.GONE);
             root.findViewById(R.id.num1).setVisibility(View.GONE);
+            root.findViewById(R.id.num2).setVisibility(View.GONE);
             fromEditAddress.setVisibility(View.GONE);
             if (clearButtonTo != null) {
                 clearButtonTo.setVisibility(View.VISIBLE);
