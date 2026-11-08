@@ -91,6 +91,7 @@ import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
+import com.taxi.easy.ua.utils.orders.ForkCancelTarget;
 import com.taxi.easy.ua.utils.orders.OrderCancelResponseHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
@@ -1565,12 +1566,12 @@ public class FinishSeparateFragment extends Fragment {
         if (activeUid == null || activeUid.trim().isEmpty()) {
             return null;
         }
-        if (hasLinkedDoubleOrder()) {
+        String doubleUid = ForkCancelTarget.resolveDoubleUid(
+                uid_Double, ExecutionStatusViewModel.getPersistedDoubleUid());
+        if (!doubleUid.isEmpty()) {
             pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-            String doubleUid = uid_Double != null ? uid_Double.trim() : "";
-            if (doubleUid.isEmpty()) {
-                return null;
-            }
+            uid_Double = doubleUid;
+            MainActivity.uid_Double = doubleUid;
             return baseUrl + api + "/android/webordersCancelDouble/" + activeUid + "/" + doubleUid
                     + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
         }
@@ -3981,13 +3982,10 @@ public class FinishSeparateFragment extends Fragment {
         return null;
     }
 
-    /** После доплаты наличными — два uid, отменять нужно парой (webordersCancelDouble). */
+    /** Вилка: два uid, отменять нужно парой (webordersCancelDouble). */
     private boolean hasLinkedDoubleOrder() {
-        if (uid_Double == null) {
-            return false;
-        }
-        String trimmed = uid_Double.trim();
-        return !trimmed.isEmpty();
+        return ForkCancelTarget.hasLinkedDouble(
+                uid_Double, ExecutionStatusViewModel.getPersistedDoubleUid());
     }
 
     @Nullable

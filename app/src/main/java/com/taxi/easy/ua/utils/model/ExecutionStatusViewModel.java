@@ -197,6 +197,8 @@ public class ExecutionStatusViewModel extends ViewModel {
         }
         if (current != null && !current.isEmpty() && !current.equals(newUid)) {
             Log.d("VIEWMODEL", "updateUid: active " + current + " -> " + newUid + ", await orderDouble event");
+            MainActivity.uid_Double = "";
+            sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, "");
         }
         MainActivity.uid = newUid;
         if (Looper.getMainLooper().isCurrentThread()) {

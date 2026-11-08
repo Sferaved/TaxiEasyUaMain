@@ -21,6 +21,7 @@ import com.taxi.easy.ua.utils.analytics.AdsConversionHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.orders.ForkCancelTarget;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
 import com.taxi.easy.ua.utils.route.RoutePlaceMatcher;
@@ -199,6 +200,7 @@ public final class EarlyOrderNavigationHelper {
             PaymentSessionHelper.saveWfpOrderRef(orderUid, MainActivity.order_id);
         }
         ExecutionStatusViewModel.resetNewOrderSession(orderUid);
+        rememberForkDoubleUid(map.get("dispatching_order_uid_Double"));
         persistDisplayCostGrivna(displayCost);
 
         if (MainActivity.viewModel != null) {
@@ -225,6 +227,21 @@ public final class EarlyOrderNavigationHelper {
                         .build()
         );
         return true;
+    }
+
+    /** Второй uid вилки из ответа заказа. Ранний переход его ещё не знает. */
+    private static void rememberForkDoubleUid(@Nullable String rawDoubleUid) {
+        String doubleUid = ForkCancelTarget.normalizeDoubleUid(rawDoubleUid);
+        if (doubleUid.isEmpty()) {
+            return;
+        }
+        if (MainActivity.viewModel != null) {
+            MainActivity.viewModel.updateDoubleUid(doubleUid);
+            return;
+        }
+        MainActivity.uid_Double = doubleUid;
+        sharedPreferencesHelperMain.saveValue(
+                ExecutionStatusViewModel.PREF_FINISH_DOUBLE_UID, doubleUid);
     }
 
     /** Дополняет карту заказа ответом HTTP, если UI уже ушёл с Visicom. */
@@ -280,9 +297,11 @@ public final class EarlyOrderNavigationHelper {
             }
             ExecutionStatusViewModel.resetNewOrderSession(uid);
         }
+        rememberForkDoubleUid(merged.get("dispatching_order_uid_Double"));
         String cost = merged.get("order_cost");
         persistDisplayCostGrivna(cost);
-        Logger.d(context, TAG, "applyHttpEnrichment uid=" + uid);
+        Logger.d(context, TAG, "applyHttpEnrichment uid=" + uid
+                + " double=" + MainActivity.uid_Double);
     }
 
     /** Конверсия «заказ» для Google Ads через Firebase purchase. */
@@ -383,6 +402,8 @@ public final class EarlyOrderNavigationHelper {
         bundle.putString("messageCost_key", displayCost);
         bundle.putSerializable("sendUrlMap", new HashMap<>(map));
         bundle.putString("UID_key", orderUid);
+        bundle.putString("dispatching_order_uid_Double",
+                ForkCancelTarget.normalizeDoubleUid(map.get("dispatching_order_uid_Double")));
         return bundle;
     }
 

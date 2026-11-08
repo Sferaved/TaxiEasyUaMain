@@ -29,6 +29,7 @@ import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
 import com.taxi.easy.ua.utils.payment.PaymentDeclinedUiHelper;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
+import com.taxi.easy.ua.utils.orders.ForkCancelTarget;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 
 import org.json.JSONException;
@@ -687,8 +688,17 @@ public class CentrifugoManager {
         String dispatchingOrderUidDouble = json.optString("dispatching_order_uid_Double", " ");
         eventValues.put("dispatching_order_uid_Double",
                 dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
+        rememberForkDoubleFromOrderEvent(dispatchingOrderUidDouble);
 
         VisicomFragment.sendUrlMap = eventValues;
+    }
+
+    private void rememberForkDoubleFromOrderEvent(String rawDoubleUid) {
+        String doubleUid = ForkCancelTarget.normalizeDoubleUid(rawDoubleUid);
+        if (doubleUid.isEmpty() || viewModel == null) {
+            return;
+        }
+        mainHandler.postSafe(() -> viewModel.updateDoubleUid(doubleUid));
     }
 
     /**
@@ -712,6 +722,7 @@ public class CentrifugoManager {
         String dispatchingOrderUidDouble = json.optString("dispatching_order_uid_Double", " ");
         eventValues.put("dispatching_order_uid_Double",
                 dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
+        rememberForkDoubleFromOrderEvent(dispatchingOrderUidDouble);
 
         if (isContextValid()) {
             try {
@@ -739,11 +750,13 @@ public class CentrifugoManager {
             String orderUid = sendUrlMap.get("dispatching_order_uid");
             final String resolvedPaySystem = paySystemStatus;
 
+            String doubleUid = sendUrlMap.get("dispatching_order_uid_Double");
             mainHandler.postSafe(() -> {
                 if (orderUid != null) {
                     viewModel.updateUid(orderUid);
                     viewModel.updatePaySystemStatus(resolvedPaySystem);
                 }
+                rememberForkDoubleFromOrderEvent(doubleUid);
                 viewModel.setStatusNalUpdate(true);
             });
         } else {
