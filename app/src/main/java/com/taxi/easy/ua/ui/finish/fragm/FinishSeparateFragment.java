@@ -1143,7 +1143,25 @@ public class FinishSeparateFragment extends Fragment {
         PaymentDeclinedNotifier.prepareDeclinedOrderState();
         PaymentDeclinedNotifier.markSheetShown();
         PendingTransactionHelper.clear();
-        showPaymentErrorBottomSheet();
+        showPaymentErrorBottomSheet(null);
+    }
+
+    /** Карта есть в телефоне, но для мерчанта этого города токена нет. Банк не вызывали. */
+    public void presentCardNotLinkedUi() {
+        if (!isAdded() || canceled || isViewingCompletedOrder()) {
+            return;
+        }
+        if (isPaymentVerified() || isOrderDispatched()) {
+            return;
+        }
+        FragmentManager fm = getParentFragmentManager();
+        if (PaymentErrorSheetHelper.isShowing(fm)) {
+            return;
+        }
+        if (!PaymentErrorSheetHelper.beginShowAttempt()) {
+            return;
+        }
+        showPaymentErrorBottomSheet(getString(R.string.error_payment_card_not_linked));
     }
 
     private void clearDeclinedPaymentUi() {
@@ -1213,7 +1231,7 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
-    private void showPaymentErrorBottomSheet() {
+    private void showPaymentErrorBottomSheet(@Nullable String message) {
         if (pendingPaymentErrorSheetShow != null) {
             View root = getView();
             if (root != null) {
@@ -1245,8 +1263,10 @@ public class FinishSeparateFragment extends Fragment {
                     "[cashReorder] showPaymentErrorBottomSheet"
                             + " pay_method=" + sheetPayMethod
                             + " uid=" + uid);
-            MyBottomSheetErrorPaymentFragment sheet =
-                    new MyBottomSheetErrorPaymentFragment(sheetPayMethod, messageFondy, amount, context);
+            MyBottomSheetErrorPaymentFragment sheet = message == null
+                    ? new MyBottomSheetErrorPaymentFragment(sheetPayMethod, messageFondy, amount, context)
+                    : new MyBottomSheetErrorPaymentFragment(
+                            sheetPayMethod, messageFondy, amount, context, message);
             sheet.show(fm, PaymentErrorSheetHelper.SHEET_TAG);
         };
         View root = getView();
@@ -3274,7 +3294,9 @@ public class FinishSeparateFragment extends Fragment {
             if (isViewingCompletedOrder()) {
                 return;
             }
-            if ("Declined".equals(status)) {
+            if ("CardNotLinked".equals(status)) {
+                presentCardNotLinkedUi();
+            } else if ("Declined".equals(status)) {
                 if (isPaymentVerified() || isOrderDispatched()) {
                     notifyAddCostPaymentFailed();
                     clearDeclinedPaymentUi();
@@ -3622,14 +3644,22 @@ public class FinishSeparateFragment extends Fragment {
         }
         String activeUid = resolveActiveOrderUid();
         String responseUid = orderResponse.getDispatchingOrderUid();
-        if (activeUid != null && responseUid != null && !responseUid.isEmpty()
-                && !activeUid.equals(responseUid)) {
+        String partnerUid = ForkCancelTarget.resolveDoubleUid(
+                uid_Double, ExecutionStatusViewModel.getPersistedDoubleUid());
+        String adoptUid = ForkCancelTarget.statusUidToAdopt(
+                activeUid, partnerUid, responseUid, orderResponse.getUid());
+        if (activeUid != null && !activeUid.isEmpty()
+                && adoptUid != null && !adoptUid.isEmpty()
+                && !activeUid.equals(adoptUid)) {
             Logger.d(context, TAG, "refreshFinishCostFromOrder uid mismatch active="
-                    + activeUid + " server=" + responseUid);
+                    + activeUid + " server=" + responseUid + " adopt=" + adoptUid);
             if (viewModel != null) {
-                viewModel.updateUid(responseUid);
+                viewModel.updateUid(adoptUid);
             }
-            activeUid = responseUid;
+            activeUid = adoptUid;
+        } else if (responseUid != null && activeUid != null && !activeUid.equals(responseUid)) {
+            Logger.d(context, TAG, "refreshFinishCostFromOrder keep fork pair active="
+                    + activeUid + " leg=" + responseUid);
         }
         String baseCost = orderResponse.getOrderCost();
         if (baseCost == null || baseCost.isEmpty()) {
@@ -4198,10 +4228,19 @@ public class FinishSeparateFragment extends Fragment {
                     return;
                 }
                 paymentCheckInProgress = false;
-                String orderStatus = response.body() != null
-                        ? response.body().getTransactionStatus()
-                        : null;
-                Logger.d(context, TAG, "WFP checkStatus on enter: " + orderStatus);
+                StatusResponse body = response.body();
+                String orderStatus = body != null ? body.getTransactionStatus() : null;
+                int reasonCode = body != null ? body.getReasonCode() : 0;
+                Logger.d(context, TAG, "WFP checkStatus on enter: " + orderStatus
+                        + " reasonCode=" + reasonCode);
+                if ("CardNotLinked".equals(orderStatus)) {
+                    presentCardNotLinkedUi();
+                    return;
+                }
+                if (reasonCode == 1127) {
+                    Logger.w(context, TAG, "WFP order not created (1127) — bank was not charged");
+                    return;
+                }
                 applyPaymentStatusFromServer(orderStatus, pendingDeclined, knownFailure);
             }
 

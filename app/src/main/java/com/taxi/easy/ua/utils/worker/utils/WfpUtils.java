@@ -117,6 +117,9 @@ public class WfpUtils {
 
     public static final String PREF_USER_SELECTED_WFP_RECTOKEN = "user_selected_wfp_rectoken";
 
+    /** Город, для которого в телефоне лежит текущий список карт. */
+    public static final String PREF_WFP_CARDS_CITY = "wfp_cards_loaded_for_city";
+
 
 
     public static void saveUserSelectedWfpRectoken(Context context, String rectoken) {
@@ -163,6 +166,79 @@ public class WfpUtils {
 
 
 
+    public static boolean storedCardListMatchesCity(String storedCity, String currentCity) {
+
+        return currentCity != null && !currentCity.isEmpty() && currentCity.equals(storedCity);
+
+    }
+
+
+
+    public static void markCardsLoadedForCity(Context context, String city) {
+
+        if (sharedPreferencesHelperMain == null) {
+
+            return;
+
+        }
+
+        sharedPreferencesHelperMain.saveValue(PREF_WFP_CARDS_CITY, city == null ? "" : city);
+
+    }
+
+
+
+    @NonNull
+    private static String storedCardsCity() {
+
+        if (sharedPreferencesHelperMain == null) {
+
+            return "";
+
+        }
+
+        Object value = sharedPreferencesHelperMain.getValue(PREF_WFP_CARDS_CITY, "");
+
+        return value != null ? value.toString() : "";
+
+    }
+
+
+
+    /**
+     * Список карт на телефоне принадлежит другому городу: стереть его,
+     * чтобы карта Киева не предлагалась в тестовой Одессе.
+     */
+    public static void dropCardsIfNotForCurrentCity(Context context) {
+
+        String current = getCurrentCity(context);
+
+        if (current.isEmpty() || storedCardListMatchesCity(storedCardsCity(), current)) {
+
+            return;
+
+        }
+
+        WfpCardSyncGuard.invalidatePendingFetches();
+
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        try {
+
+            database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
+
+        } finally {
+
+            database.close();
+
+        }
+
+        markCardsLoadedForCity(context, current);
+
+    }
+
+
+
     @NonNull
     public static String getCityScopedSelectedWfpRectoken(Context context) {
 
@@ -177,6 +253,8 @@ public class WfpUtils {
                 return value.toString();
 
             }
+
+            return "";
 
         }
 
@@ -262,6 +340,8 @@ public class WfpUtils {
 
                 Logger.d(context, TAG, "saveWfpCardsToDatabase: no cards for current merchant");
 
+                markCardsLoadedForCity(context, getCurrentCity(context));
+
                 return;
 
             }
@@ -308,6 +388,8 @@ public class WfpUtils {
 
             ensureActiveWfpCardAfterSync(context, cards);
 
+            markCardsLoadedForCity(context, getCurrentCity(context));
+
         } finally {
 
             database.close();
@@ -323,6 +405,8 @@ public class WfpUtils {
      */
     @NonNull
     public static String resolveActiveWfpRectoken(Context context) {
+
+        dropCardsIfNotForCurrentCity(context);
 
         String checked = queryCheckedWfpRectoken(context);
 
@@ -609,9 +693,13 @@ public class WfpUtils {
         }
     }
 
-    private static boolean applyFetchResultIfCurrent(Context context, List<CardInfo> cards, long fetchGeneration) {
+    private static boolean applyFetchResultIfCurrent(Context context, List<CardInfo> cards, long fetchGeneration, String requestedCity) {
         if (!WfpCardSyncGuard.shouldApplyFetchResult(fetchGeneration)) {
             Logger.d(context, TAG, "applyFetchResultIfCurrent: skip stale fetch gen=" + fetchGeneration);
+            return false;
+        }
+        if (!storedCardListMatchesCity(requestedCity, getCurrentCity(context))) {
+            Logger.d(context, TAG, "applyFetchResultIfCurrent: skip other city " + requestedCity);
             return false;
         }
         saveWfpCardsToDatabase(context, cards);
@@ -710,7 +798,7 @@ public class WfpUtils {
 
         }
 
-
+        dropCardsIfNotForCurrentCity(context);
 
         CallbackServiceWfp service = createCallbackService(context);
 
@@ -742,7 +830,7 @@ public class WfpUtils {
 
                 if (success) {
 
-                    success = applyFetchResultIfCurrent(context, parsed.getCards(), fetchGeneration);
+                    success = applyFetchResultIfCurrent(context, parsed.getCards(), fetchGeneration, city);
 
                 } else {
 
@@ -794,7 +882,7 @@ public class WfpUtils {
 
         }
 
-
+        dropCardsIfNotForCurrentCity(context);
 
         CallbackServiceWfp service = createCallbackService(context);
 
@@ -830,7 +918,7 @@ public class WfpUtils {
 
                 Logger.d(context, TAG, "onResponse: cards" + cards);
 
-                applyFetchResultIfCurrent(context, cards, fetchGeneration);
+                applyFetchResultIfCurrent(context, cards, fetchGeneration, city);
 
             } else {
 

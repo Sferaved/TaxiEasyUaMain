@@ -34,4 +34,22 @@ public class ForkCancelTargetTest {
                 ForkCancelTarget.resolveDoubleUid(" ", "a2bced741a124cb0acdd7843c1e089c8"));
         assertTrue(ForkCancelTarget.hasLinkedDouble(null, "a2bced741a124cb0acdd7843c1e089c8"));
     }
+
+    @Test
+    public void cashLegUid_isNotAdoptedAsNewOrder() {
+        String card = "1f7c6f637b7e42839dd8c8984ff11683";
+        String cash = "62bfdb9c56fc46d2a781fd130fd60e65";
+        assertTrue(ForkCancelTarget.isForkPartnerStatusUid(card, cash, cash));
+        assertFalse(ForkCancelTarget.isForkPartnerStatusUid(card, cash, card));
+        assertEquals(card, ForkCancelTarget.statusUidToAdopt(card, cash, cash, card));
+        assertEquals(card, ForkCancelTarget.statusUidToAdopt(card, cash, cash, null));
+    }
+
+    @Test
+    public void recreatedOrderUid_isAdopted() {
+        String card = "1f7c6f637b7e42839dd8c8984ff11683";
+        String cash = "62bfdb9c56fc46d2a781fd130fd60e65";
+        String recreated = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        assertEquals(recreated, ForkCancelTarget.statusUidToAdopt(card, cash, recreated, recreated));
+    }
 }

@@ -374,6 +374,7 @@
     <string name="double_order_error">Дублювання замовлення. Ви не можете створювати подібне замовлення, поки не знайшлася машина на попереднє замовлення.</string>
     <string name="user_cards">Ваші картки для оплати подорожей:</string>
     <string name="error_payment_card">Помилка обробки платежу. Виберіть іншу карту або замовте подорож за готівку.</string>
+    <string name="error_payment_card_not_linked">Картку для цього міста не прив’язано. Банк запит не отримував. Додайте картку ще раз або замовте за готівку.</string>
     <string name="nal_payment_btn">За готівку</string>
     <string name="new_card_btn">Нова карта</string>
     <string name="chois_card_btn">Вибраною карткою</string>

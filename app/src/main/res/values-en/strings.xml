@@ -369,6 +369,7 @@
     <string name="double_order_error">Duplicate order. You cannot create a similar order until a car has been found for the previous order.</string>
     <string name="user_cards">Your cards for paying for trips:</string>
     <string name="error_payment_card">Error processing payment. Please choose another card or book a ride with cash.</string>
+    <string name="error_payment_card_not_linked">This card is not linked for this city. The bank was not charged. Add the card again or pay cash.</string>
     <string name="nal_payment_btn">For cash</string>
     <string name="new_card_btn">New card</string>
     <string name="chois_card_btn">Selected card</string>

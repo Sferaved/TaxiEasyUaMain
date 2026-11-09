@@ -807,6 +807,7 @@ public class CardFragment extends Fragment {
 
     @SuppressLint("Range")
     private ArrayList<Map<String, String>> getCardMapsFromDatabase() {
+        WfpUtils.dropCardsIfNotForCurrentCity(context);
         ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.query(MainActivity.TABLE_WFP_CARDS, null, null, null, null, null, null);

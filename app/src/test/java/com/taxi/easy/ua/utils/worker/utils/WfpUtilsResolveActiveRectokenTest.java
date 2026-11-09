@@ -41,6 +41,7 @@ public class WfpUtilsResolveActiveRectokenTest {
         context.getSharedPreferences("my_prefs", MODE_PRIVATE).edit().clear().commit();
         createTables();
         seedCity("Kyiv City");
+        WfpUtils.markCardsLoadedForCity(context, "Kyiv City");
     }
 
     @After
@@ -70,6 +71,23 @@ public class WfpUtilsResolveActiveRectokenTest {
         assertEquals("1", WfpUtils.normalizeActiveFlag("true"));
         assertEquals("0", WfpUtils.normalizeActiveFlag("-1"));
         assertEquals("0", WfpUtils.normalizeActiveFlag("0"));
+    }
+
+    @Test
+    public void resolveActiveWfpRectoken_dropsCardsLoadedForAnotherCity() {
+        insertWfpCard("rectoken-kyiv", "1");
+        replaceCity("OdessaTest");
+
+        assertEquals("", WfpUtils.resolveActiveWfpRectoken(context));
+        assertEquals("", queryRectokenCheck("rectoken-kyiv"));
+    }
+
+    @Test
+    public void storedCardListMatchesCity_requiresSameNonEmptyCity() {
+        assertEquals(true, WfpUtils.storedCardListMatchesCity("Kyiv City", "Kyiv City"));
+        assertEquals(false, WfpUtils.storedCardListMatchesCity("Kyiv City", "OdessaTest"));
+        assertEquals(false, WfpUtils.storedCardListMatchesCity("", "OdessaTest"));
+        assertEquals(false, WfpUtils.storedCardListMatchesCity("Kyiv City", ""));
     }
 
     @Test
@@ -142,6 +160,17 @@ public class WfpUtilsResolveActiveRectokenTest {
                     + "(id integer primary key autoincrement,"
                     + " masked_card text, card_type text, bank_name text,"
                     + " rectoken text, merchant text, rectoken_check text)");
+        } finally {
+            database.close();
+        }
+    }
+
+    private void replaceCity(String cityName) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            ContentValues cv = new ContentValues();
+            cv.put("city", cityName);
+            database.update(MainActivity.CITY_INFO, cv, null, null);
         } finally {
             database.close();
         }

@@ -67,6 +67,7 @@ import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.uxcam.UXCam;
 
 import java.io.IOException;
@@ -1078,6 +1079,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
     @SuppressLint("Range")
     private ArrayList<Map<String, String>> getCardMapsFromDatabase(String table) {
+        if (MainActivity.TABLE_WFP_CARDS.equals(table)) {
+            WfpUtils.dropCardsIfNotForCurrentCity(context);
+        }
         ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.query(table, null, null, null, null, null, null);

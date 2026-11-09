@@ -374,6 +374,7 @@
     <string name="double_order_error">Дублирование заказа. Вы не можете создавать подобный заказ, пока не нашлась машина по предварительному заказу.</string>
     <string name="user_cards">Ваши карты для оплаты поездок:</string>
     <string name="error_payment_card">Ошибка обработки платежа. Выберите другую карту или закажите поездку за наличные деньги.</string>
+    <string name="error_payment_card_not_linked">Карта не привязана для этого города. Банк запрос не получал. Добавьте карту ещё раз или закажите за наличные.</string>
     <string name="nal_payment_btn">За наличные деньги</string>
     <string name="new_card_btn">Новая карта</string>
     <string name="chois_card_btn">Выбранной картой</string>
