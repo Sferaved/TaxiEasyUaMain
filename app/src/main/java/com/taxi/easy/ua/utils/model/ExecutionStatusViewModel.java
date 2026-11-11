@@ -26,6 +26,7 @@ public class ExecutionStatusViewModel extends ViewModel {
     public static final String PREF_FINISH_DOUBLE_UID = "finish_double_uid";
     public static final String PREF_FINISH_DISPLAY_COST = "finish_display_cost_grivna";
     public static final String PREF_FINISH_CANCEL_IN_FLIGHT = "finish_cancel_in_flight";
+    public static final String PREF_FINISH_CANCEL_AWAITING_OPERATOR = "finish_cancel_awaiting_operator";
     public static final String PREF_FINISH_USER_CANCELED = "finish_user_canceled";
     public static final String PREF_FINISH_CANCELED_UID = "finish_canceled_uid";
     public static final String PREF_SUPPRESS_ACTIVE_ORDER_NOTICE_UNTIL = "finish_suppress_active_order_notice_until";
@@ -252,6 +253,18 @@ public class ExecutionStatusViewModel extends ViewModel {
 
     public static void setCancelInFlightPref(boolean inFlight) {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCEL_IN_FLIGHT, inFlight);
+        if (!inFlight) {
+            setCancelAwaitingOperatorPref(false);
+        }
+    }
+
+    public static void setCancelAwaitingOperatorPref(boolean awaiting) {
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCEL_AWAITING_OPERATOR, awaiting);
+    }
+
+    public static boolean isCancelAwaitingOperatorPref() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_CANCEL_AWAITING_OPERATOR, false);
+        return v instanceof Boolean && (Boolean) v;
     }
 
     public static boolean isCancelInFlightPref() {

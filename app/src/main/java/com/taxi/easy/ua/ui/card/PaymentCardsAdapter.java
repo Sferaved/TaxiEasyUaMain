@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.payment.PaymentRowSlots;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,9 +64,11 @@ public class PaymentCardsAdapter extends RecyclerView.Adapter<PaymentCardsAdapte
         holder.subtitle.setVisibility(View.GONE);
 
         boolean selected = position == selectedPosition;
-        holder.check.setVisibility(selected ? View.VISIBLE : View.GONE);
+        holder.check.setVisibility(PaymentRowSlots.markVisibility(selected));
 
-        holder.delete.setVisibility(View.VISIBLE);
+        holder.delete.setVisibility(PaymentRowSlots.deleteVisibility(true));
+        holder.delete.setClickable(true);
+        holder.delete.setFocusable(true);
         holder.delete.setOnClickListener(v -> {
             int adapterPos = holder.getBindingAdapterPosition();
             if (adapterPos == RecyclerView.NO_POSITION) {

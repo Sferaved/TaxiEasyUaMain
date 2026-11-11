@@ -51,26 +51,28 @@
     </LinearLayout>
 
     <ImageView
-        android:id="@+id/paymentRowCheck"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_check"
-        android:visibility="gone"
-        app:tint="@color/uklon_on_surface"
-        tools:visibility="visible" />
-
-    <ImageView
         android:id="@+id/paymentRowDelete"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_marginStart="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="false"
         android:contentDescription="@string/un_link_token"
+        android:focusable="false"
         android:padding="8dp"
         android:scaleType="centerInside"
         android:src="@drawable/ic_baseline_delete_24"
-        android:visibility="gone"
+        android:visibility="invisible"
         app:tint="@color/uklon_on_surface_secondary"
+        tools:visibility="visible" />
+
+    <ImageView
+        android:id="@+id/paymentRowCheck"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="4dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_check"
+        android:visibility="invisible"
+        app:tint="@color/uklon_on_surface"
         tools:visibility="visible" />
 </LinearLayout>

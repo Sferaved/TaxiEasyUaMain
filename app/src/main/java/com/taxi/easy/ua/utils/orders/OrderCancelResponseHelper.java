@@ -89,4 +89,16 @@ public final class OrderCancelResponseHelper {
         }
         return lastCloseReason != -1 && lastCloseReason != 0;
     }
+
+    /**
+     * Пока ждём оператора, push «canceled» не закрывает экран сам:
+     * опрос ещё может видеть поиск. Нужно сразу перечитать статус.
+     */
+    public static boolean shouldRefreshStatusAfterCanceledPush(
+            boolean orderAlreadyCanceled,
+            boolean operatorConfirmationPending,
+            boolean pushAccepted
+    ) {
+        return !orderAlreadyCanceled && operatorConfirmationPending && !pushAccepted;
+    }
 }

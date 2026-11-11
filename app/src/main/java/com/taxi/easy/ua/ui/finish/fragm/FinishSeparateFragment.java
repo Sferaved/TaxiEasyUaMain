@@ -1648,10 +1648,62 @@ public class FinishSeparateFragment extends Fragment {
         cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
         pollOrderStatusDuringCancelWatch();
         scheduleCancelWatchPoll();
-        if (text_status != null) {
-            text_status.setText(R.string.sent_cancel_message);
-        }
+        showCancelAwaitingOperatorUi();
         Logger.d(context, TAG, "handleCancelRequestPending: awaiting dispatch confirmation");
+    }
+
+    /**
+     * Диспетчер ещё не снял заказ: убрать поиск машины и кнопки активного заказа,
+     * оставить маршрут, оплату и звонок оператору.
+     */
+    private void showCancelAwaitingOperatorUi() {
+        if (!isAdded() || context == null || canceled || text_status == null) {
+            return;
+        }
+        ExecutionStatusViewModel.setCancelAwaitingOperatorPref(true);
+        text_status.clearAnimation();
+        text_status.setText(R.string.cancel_awaiting_operator);
+        setVisibility(GONE, btn_add_cost, btn_open, btn_options, btn_cancel_order, btn_again,
+                textStatusCar, textCarMessage, countdownTextView, carProgressBar, progressSteps);
+        View callOperator = text_status.getRootView().findViewById(R.id.btnCallAdmin);
+        if (callOperator != null) {
+            callOperator.setVisibility(VISIBLE);
+        }
+        if (viewModel != null) {
+            viewModel.hideCancelButton();
+        }
+    }
+
+    private void resumeOperatorCancelWatch() {
+        if (!isAdded() || canceled) {
+            return;
+        }
+        cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
+        statusPollPaused = true;
+        showCancelAwaitingOperatorUi();
+        scheduleCancelWatchPoll();
+    }
+
+    private void onServerCanceledPush(@Nullable String canceledStatus) {
+        if (canceledStatus == null || !"canceled".equals(canceledStatus) || canceled) {
+            return;
+        }
+        boolean accept = shouldAcceptServerCanceledPush();
+        if (accept) {
+            viewModel.getOrderResponse().removeObservers(getViewLifecycleOwner());
+            showOrderCanceledFromServer();
+            return;
+        }
+        if (OrderCancelResponseHelper.shouldRefreshStatusAfterCanceledPush(
+                false,
+                ExecutionStatusViewModel.isCancelAwaitingOperatorPref(),
+                false)) {
+            Logger.d(context, TAG, "canceled push while awaiting operator — refresh status");
+            cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
+            statusPollPaused = true;
+            pollOrderStatusDuringCancelWatch();
+            scheduleCancelWatchPoll();
+        }
     }
 
     private void pollOrderStatusDuringCancelWatch() {
@@ -2341,7 +2393,9 @@ public class FinishSeparateFragment extends Fragment {
 
     private void setVisibility(int visibility, View... views) {
         for (View view : views) {
-            view.setVisibility(visibility);
+            if (view != null) {
+                view.setVisibility(visibility);
+            }
         }
     }
 
@@ -3163,10 +3217,7 @@ public class FinishSeparateFragment extends Fragment {
         Log.d("EventBus", "Received canceled status: " + canceledStatus);
         // Обновление UI или выполнение действий
         Logger.d(context,"Pusher eventCanceled", "Finish eventCanceled status set: " + canceledStatus);
-        if (canceledStatus != null && "canceled".equals(canceledStatus) && shouldAcceptServerCanceledPush()) {
-            viewModel.getOrderResponse().removeObservers(getViewLifecycleOwner());
-            showOrderCanceledFromServer();
-        }
+        onServerCanceledPush(canceledStatus);
     }
 
     @Override
@@ -3252,7 +3303,8 @@ public class FinishSeparateFragment extends Fragment {
 
         viewModel.getCancelStatus().observe(getViewLifecycleOwner(), status -> {
             Logger.d(context,"Pusher getCancelStatus", "Finish getCancelStatus status set: " + status);
-            if (status == null || canceled || isCancelUiShown()) {
+            if (status == null || canceled || isCancelUiShown()
+                    || ExecutionStatusViewModel.isCancelAwaitingOperatorPref()) {
                 return;
             }
             btn_cancel_order.setEnabled(status);
@@ -3336,10 +3388,7 @@ public class FinishSeparateFragment extends Fragment {
         viewModel.getCanceledStatus().removeObservers(getViewLifecycleOwner());
         viewModel.getCanceledStatus().observe(getViewLifecycleOwner(), status -> {
             Logger.d(context, "Pusher eventCanceled", "Finish eventCanceled status set: " + status);
-            if (status != null && "canceled".equals(status) && shouldAcceptServerCanceledPush()) {
-                viewModel.getOrderResponse().removeObservers(getViewLifecycleOwner());
-                showOrderCanceledFromServer();
-            }
+            onServerCanceledPush(status);
         });
 
         if (!paySystemStatus.equals("nal_payment")) {
@@ -3439,6 +3488,10 @@ public class FinishSeparateFragment extends Fragment {
         });
 //наблюдение на кнопкой отмены
         viewModel.getCancelButtonVisible().observe(getViewLifecycleOwner(), isVisible -> {
+            if (canceled || ExecutionStatusViewModel.isCancelAwaitingOperatorPref()) {
+                btn_cancel_order.setVisibility(GONE);
+                return;
+            }
             btn_cancel_order.setVisibility(View.VISIBLE); // всегда видима (если хочешь)
             if (isVisible != null) {
 //                btn_cancel_order.setVisibility(isVisible ? View.VISIBLE : View.GONE);
@@ -3875,6 +3928,10 @@ public class FinishSeparateFragment extends Fragment {
             String canceledUid = ExecutionStatusViewModel.getCanceledOrderUid();
             if (canceledUid != null && canceledUid.equals(reopenUid)) {
                 ExecutionStatusViewModel.setCancelInFlightPref(false);
+            } else if (ExecutionStatusViewModel.isCancelAwaitingOperatorPref()) {
+                cancelRequestInFlight = true;
+                setCancelButtonBusy(true);
+                showCancelAwaitingOperatorUi();
             } else {
                 cancelRequestInFlight = true;
                 setCancelButtonBusy(true);
@@ -4289,6 +4346,9 @@ public class FinishSeparateFragment extends Fragment {
             if (isViewingCompletedOrder()) {
                 Logger.d(context, TAG, "onResume: archived completed order — read-only");
                 applyArchivedCompletedOrderUi();
+            } else if (ExecutionStatusViewModel.isCancelAwaitingOperatorPref()) {
+                Logger.d(context, TAG, "onResume: awaiting operator cancel");
+                resumeOperatorCancelWatch();
             } else {
                 Logger.d(context, TAG, "onResume: skip polling — cancel UI active");
                 restoreOrderAgainButton();

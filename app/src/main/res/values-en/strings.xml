@@ -34,7 +34,7 @@
     <string name="phone_edit">Edit</string>
     <string name="format_phone">Phone number input format: +38 093 666 55 44</string>
     <string name="sent_button">Send</string>
-    <string name="verify_internet">Check your Internet connection, call the operator or restart the application.</string>
+    <string name="verify_internet">No internet. Call the operator or restart the app.</string>
     <string name="save_button">Save</string>
     <string name="you_this">"You are here now: "</string>
     <string name="make_rout_message">Make a route</string>
@@ -123,14 +123,14 @@
     <string name="text_result">Your route</string>
     <string name="btn_again_text">Order again</string>
     <string name="textStatus">Order status</string>
-    <string name="cancel_order">Cancel order</string>
-    <string name="ex_st_1">Waiting for machine search (for pre-order)</string>
-    <string name="ex_st_2">Found car</string>
-    <string name="ex_st_2_1">The car is ready to board. Get out, the driver is waiting for you.</string>
+    <string name="cancel_order">Cancel</string>
+    <string name="ex_st_1">Waiting to start the search</string>
+    <string name="ex_st_2">Car found</string>
+    <string name="ex_st_2_1">The car is here. Please come out, the driver is waiting.</string>
     <string name="ex_st_3">" Car number: "</string>
     <string name="ex_st_4">" Driver's phone: "</string>
-    <string name="ex_st_5">" Estimated submission time: "</string>
-    <string name="ex_st_0">Searching for car</string>
+    <string name="ex_st_5">" Pickup: "</string>
+    <string name="ex_st_0">Looking for a car</string>
     <string name="your_city">"Your city"</string>
     <string name="Kyiv_city">Kyiv</string>
     <string name="Odessa">Odesa</string>
@@ -338,7 +338,7 @@
     <string name="checking">Wait, checking data.</string>
     <string name="time_out_text">Trip cancellation due to payment timeout. Try again.</string>
     <string name="pay_cancel">Trip cancelled due to failure to make successful payment within the allotted time. Please try again.</string>
-    <string name="ex_st_canceled">The order was canceled. Please try again.</string>
+    <string name="ex_st_canceled">Order canceled. Please try again.</string>
     <string name="ex_st_canceled_no_pay">Order sent for cancellation</string>
     <string name="ex_st_canceled_payment_failed">Order canceled: payment failed</string>
     <string name="search">Search for address...</string>
@@ -400,9 +400,10 @@
     <string name="order_continue">Continue browsing</string>
     <string name="anr_message">Sorry, had to wait a bit</string>
     <string name="change_tarrif">Select a different tariff</string>
-    <string name="checkout_status">Please wait, order status is being checked...</string>
+    <string name="checkout_status">Checking the order</string>
     <string name="check_order_mes">Wait for order registration...</string>
-    <string name="sent_cancel_message">Order cancellation request sent</string>
+    <string name="sent_cancel_message">Cancellation request sent</string>
+    <string name="cancel_awaiting_operator">Waiting for the operator to cancel</string>
     <string name="aplay_card_message">Your card has been accepted and sent for verification. It won\'t be possible for you to pay a higher price.</string>
     <string name="status_checkout_message">Status update requested. Wait or check with the operator</string>
     <string name="update_finish_mes">Update completed. The application will be restarted.</string>
@@ -451,7 +452,7 @@
     <string name="pos_chr">Khudiakova St., 1, Chernivtsi</string>
     <string name="pos_ltk">Zamkova Street, 7, Lutsk</string>
     <string name="text_cost">Payment</string>
-    <string name="textStatusCar">Car information</string>
+    <string name="textStatusCar">Car</string>
     <string name="timer_finished">Timer finished</string>
     <string name="close_timer">"Closing in "</string>
     <string name="time_info_to_start_point">Car arrival in:</string>
@@ -477,8 +478,8 @@
     <string name="check_cost_message">Please wait, getting trip cost...</string>
 
     <string name="device">Device:</string>
-    <string name="time_car_found">The time to search for a car has expired</string>
-    <string name="cancel_car_found_time">Click the OK button to cancel the current order and proceed to a new order</string>
+    <string name="time_car_found">Car search time is over</string>
+    <string name="cancel_car_found_time">Tap OK to cancel this order and create a new one</string>
     <string name="alfa_test">(Alpha testing)</string>
     <string name="update_timeout">The update process took too long. Please try again later.</string>
     <string name="update_error">Error checking for updates. Check your internet connection.</string>
@@ -492,15 +493,15 @@
     <string name="save_btn">Save</string>
 
     <string name="ok_add_cost">Confirm</string>
-    <string name="add_cost_btn">I want it faster</string>
+    <string name="add_cost_btn">Faster</string>
     <string name="addCostBonusMessage">For a faster car search, order in cash or pay for the trip by card</string>
-    <string name="recounting_order">Order recalculation in progress</string>
-    <string name="add_cost_processing">Additional payment is being processed. Please wait</string>
-    <string name="add_cost_processing_slow">Payment is taking longer than usual. Please keep the app open — we will notify you of the result</string>
+    <string name="recounting_order">Recalculating the order</string>
+    <string name="add_cost_processing">Processing the extra payment. Please wait</string>
+    <string name="add_cost_processing_slow">The extra payment is taking longer. Keep the app open.</string>
     <string name="add_cost_payment_failed">Additional payment failed. Please try again</string>
-    <string name="ex_st_finished">Your trip is over. Thank you for using our services. We look forward to seeing you next time.</string>
-    <string name="ex_st_in_rout">Fulfillment of the order by the driver.</string>
-    <string name="ex_st_in_start_point">The car has arrived. Please proceed to board. Enjoy your trip</string>
+    <string name="ex_st_finished">Trip completed. Thank you.</string>
+    <string name="ex_st_in_rout">You are on the way</string>
+    <string name="ex_st_in_start_point">The car is here. You can board.</string>
     <string name="pay_error_title">Payment error</string>
     <string name="try_again_pay">"Try again, invoice number: "</string>
     <string name="no_cards_info">You have no verified cards for payment. Verify your payment card or choose Google Pay.</string>
@@ -522,7 +523,7 @@
     <string name="in_account">Sign in to your account</string>
     <string name="out_account_btn">Sign out of your account</string>
     <string name="in_google_bonus">To receive bonuses, log in to your Google account</string>
-    <string name="cancel_btn_enable">Order cancellation is temporarily unavailable</string>
+    <string name="cancel_btn_enable">Cancellation is unavailable for now</string>
     <string name="cancel_error">An error occurred while canceling your order. Please contact the operator.</string>
     <string name="del_acc_mes">All your personal data and settings will be deleted from the application and from our servers. The application will be closed.</string>
     <string name="err_del_phone_fb">Error deleting account. Contact your operator.</string>

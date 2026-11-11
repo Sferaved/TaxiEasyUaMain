@@ -98,4 +98,20 @@ public class OrderCancelResponseHelperTest {
         assertTrue(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
                 false, false, true, -1));
     }
+
+    @Test
+    public void refreshStatus_whenCanceledPushArrivesWhileWaitingForOperator() {
+        assertTrue(OrderCancelResponseHelper.shouldRefreshStatusAfterCanceledPush(
+                false, true, false));
+    }
+
+    @Test
+    public void doNotRefreshStatus_whenPushAlreadyAcceptedOrOrderClosed() {
+        assertFalse(OrderCancelResponseHelper.shouldRefreshStatusAfterCanceledPush(
+                false, true, true));
+        assertFalse(OrderCancelResponseHelper.shouldRefreshStatusAfterCanceledPush(
+                true, true, false));
+        assertFalse(OrderCancelResponseHelper.shouldRefreshStatusAfterCanceledPush(
+                false, false, false));
+    }
 }

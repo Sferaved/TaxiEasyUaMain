@@ -46,6 +46,7 @@ import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.payment.PaymentRowSlots;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 
@@ -212,7 +213,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         } else {
             subtitle.setVisibility(View.GONE);
         }
-        row.findViewById(R.id.paymentRowCheck).setVisibility(View.GONE);
+        row.findViewById(R.id.paymentRowCheck).setVisibility(PaymentRowSlots.markVisibility(false));
+        row.findViewById(R.id.paymentRowDelete).setVisibility(PaymentRowSlots.deleteVisibility(false));
     }
 
     private void onPaymentRowSelected(int position) {
@@ -231,7 +233,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     }
 
     private void setRowChecked(View row, boolean checked) {
-        row.findViewById(R.id.paymentRowCheck).setVisibility(checked ? View.VISIBLE : View.GONE);
+        row.findViewById(R.id.paymentRowCheck).setVisibility(PaymentRowSlots.markVisibility(checked));
     }
 
     private void initRadioButtons() {

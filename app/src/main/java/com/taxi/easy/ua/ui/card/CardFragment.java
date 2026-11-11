@@ -62,6 +62,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.payment.PaymentRowSlots;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -266,7 +267,10 @@ public class CardFragment extends Fragment {
         addIcon.setImageResource(R.drawable.ic_add_card);
         addTitle.setText(R.string.payment_add_card);
         rowAddCardView.findViewById(R.id.paymentRowSubtitle).setVisibility(View.GONE);
-        rowAddCardView.findViewById(R.id.paymentRowCheck).setVisibility(View.GONE);
+        rowAddCardView.findViewById(R.id.paymentRowCheck)
+                .setVisibility(PaymentRowSlots.markVisibility(false));
+        rowAddCardView.findViewById(R.id.paymentRowDelete)
+                .setVisibility(PaymentRowSlots.deleteVisibility(false));
         rowAddCardView.setOnClickListener(v -> {
             if (!NetworkUtils.isNetworkAvailable(requireContext())) {
                 Toast.makeText(context, R.string.network_no_internet, Toast.LENGTH_LONG).show();
@@ -284,7 +288,7 @@ public class CardFragment extends Fragment {
         if (rowCashView != null) {
             View check = rowCashView.findViewById(R.id.paymentRowCheck);
             if (check != null) {
-                check.setVisibility(selected ? View.VISIBLE : View.GONE);
+                check.setVisibility(PaymentRowSlots.markVisibility(selected));
             }
         }
     }
@@ -293,7 +297,7 @@ public class CardFragment extends Fragment {
         if (rowGooglePayView != null) {
             View check = rowGooglePayView.findViewById(R.id.paymentRowCheck);
             if (check != null) {
-                check.setVisibility(selected ? View.VISIBLE : View.GONE);
+                check.setVisibility(PaymentRowSlots.markVisibility(selected));
             }
         }
     }

@@ -35,7 +35,7 @@
     <string name="phone_edit">Виправити</string>
     <string name="format_phone">Формат вводу номера телефону: +38 093 666 55 44</string>
     <string name="sent_button">Відправити</string>
-    <string name="verify_internet">Перевірте інтернет-з\'єднання, зателефонуйте оператору або перезавантажте програму.</string>
+    <string name="verify_internet">Немає інтернету. Зателефонуйте оператору або перезапустіть застосунок.</string>
     <string name="save_button">Зберегти</string>
     <string name="you_this">"Ви зараз тут: "</string>
     <string name="make_rout_message">Сформуйте маршрут</string>
@@ -126,14 +126,14 @@
     <string name="text_result">Ваш маршрут</string>
     <string name="btn_again_text">Замовити ще</string>
     <string name="textStatus">Статус замовлення</string>
-    <string name="cancel_order">Скасувати замовлення</string>
-    <string name="ex_st_1">Очікується пошук машини (для попереднього замовлення)</string>
-    <string name="ex_st_2">Знайдена машина.</string>
-    <string name="ex_st_2_1">Машина подана на посадку. Виходьте на Вас чекає водій. </string>
+    <string name="cancel_order">Скасувати</string>
+    <string name="ex_st_1">Очікуємо пошук машини</string>
+    <string name="ex_st_2">Машину знайдено</string>
+    <string name="ex_st_2_1">Машина подана. Виходьте, водій чекає.</string>
     <string name="ex_st_3">" Номер авто: "</string>
     <string name="ex_st_4">" Телефон водія: "</string>
-    <string name="ex_st_5">" Очікуваний час подачі: "</string>
-    <string name="ex_st_0">Здійснюється пошук машини</string>
+    <string name="ex_st_5">" Подача: "</string>
+    <string name="ex_st_0">Шукаємо машину</string>
     <string name="your_city">"Ваше місто "</string>
     <string name="Kyiv_city">Київ</string>
     <string name="Odessa">Одеса</string>
@@ -343,7 +343,7 @@
     <string name="checking">Зачекайте, йде перевірка даних.</string>
     <string name="time_out_text">Скасування поїздки по таймауту оплати. Спробуйте ще.</string>
     <string name="pay_cancel">Поїздку скасовано через відсутність успішної оплати протягом відведеного таймінгу. Спробуйте ще.</string>
-    <string name="ex_st_canceled">Заказ скасовано. Спробуйте ще.</string>
+    <string name="ex_st_canceled">Замовлення скасовано. Спробуйте ще раз.</string>
     <string name="ex_st_canceled_no_pay">Замовлення надіслано на скасування</string>
     <string name="ex_st_canceled_payment_failed">Замовлення скасовано: оплата не пройшла</string>
     <string name="search">Пошук адреси...</string>
@@ -357,7 +357,7 @@
     <string name="update_app">🆙 Оновити додаток</string>
     <string name="upload">Завантаження оновлення...</string>
     <string name="update_ok">У Вас встановлена актуальна версія. Немає необхідності оновлювати програму.</string>
-    <string name="phone_driver">Звонок водію</string>
+    <string name="phone_driver">Дзвінок водію</string>
     <string name="auto_info">авто</string>
     <string name="city_no_cards">Оплата банківськими картками недоступна у цьому населеному пункті. Ми повідомимо Вас коли оплата банківськими картками стане доступною.</string>
     <string name="pos_k">вул. Хрещатик 16, м.Київ\t</string>
@@ -405,9 +405,10 @@
     <string name="order_continue">Продовжити перегляд</string>
     <string name="anr_message">Вибачте, довелося трохи зачекати</string>
     <string name="change_tarrif">Виберіть інший тариф</string>
-    <string name="checkout_status">Зачекайте, йде перевірка статусу замовлення...</string>
+    <string name="checkout_status">Перевіряємо статус замовлення</string>
     <string name="check_order_mes">Зачекайте на реєстрацію замовлення...</string>
-    <string name="sent_cancel_message">Запит на скасування замовлення надіслано</string>
+    <string name="sent_cancel_message">Запит на скасування надіслано</string>
+    <string name="cancel_awaiting_operator">Очікуйте скасування оператором</string>
     <string name="aplay_card_message">Вашу картку прийн585858585858585858585858585858ято та відправлено на перевірку. Скоро вона стане доступною для оплати подорожей.</string>
     <string name="status_checkout_message">Запитано оновлення статусу. Зачекайте або уточніть оператора</string>
     <string name="update_finish_mes">Оновлення завершено. Програма буде перезапущена.</string>
@@ -456,7 +457,7 @@
     <string name="pos_chr">вул. Худякова, 1, м.Чернівці</string>
     <string name="pos_ltk">вул. Замкова, 7, м.Луцьк</string>
     <string name="text_cost">Оплата</string>
-    <string name="textStatusCar">Інформація про авто</string>
+    <string name="textStatusCar">Авто</string>
     <string name="timer_finished">Таймер завершено</string>
     <string name="close_timer">"Закриття через "</string>
     <string name="time_info_to_start_point">Прибуття авто через:</string>
@@ -482,8 +483,8 @@
     <string name="check_cost_message">Зачекайте, йде розрахунок вартості поїздки...</string>
 
     <string name="device">Пристрій:</string>
-    <string name="time_car_found">Время поиска машины подошло к концу</string>
-    <string name="cancel_car_found_time">Нажмите кнопку Ок чтобы отменить текущий заказ и перейти к новому заказу</string>
+    <string name="time_car_found">Час пошуку закінчився</string>
+    <string name="cancel_car_found_time">Натисніть «Ок», щоб скасувати це замовлення і створити нове</string>
     <string name="alfa_test">(Альфа-тестування)</string>
     <string name="update_timeout">Процес оновлення зайняв надто багато часу. Спробуйте пізніше.</string>
     <string name="update_error">Помилка перевірки оновлень. Перевірте підключення до Інтернету.</string>
@@ -497,15 +498,15 @@
     <string name="save_btn">Зберегти</string>
 
     <string name="ok_add_cost">Підтвердити</string>
-    <string name="add_cost_btn">Бажаю швидше</string>
+    <string name="add_cost_btn">Швидше</string>
     <string name="addCostBonusMessage">Для швидшого пошуку авто замовте за готівку або з оплатою поїздки карткою</string>
-    <string name="recounting_order">Відбувається перерахунок замовлення</string>
-    <string name="add_cost_processing">Доплату обробляється. Зачекайте, будь ласка</string>
-    <string name="add_cost_processing_slow">Доплата займає більше часу, ніж зазвичай. Не закривайте застосунок — повідомимо про результат</string>
+    <string name="recounting_order">Перераховуємо замовлення</string>
+    <string name="add_cost_processing">Обробляємо доплату. Зачекайте</string>
+    <string name="add_cost_processing_slow">Доплата займає більше часу. Не закривайте застосунок.</string>
     <string name="add_cost_payment_failed">Доплата не пройшла. Спробуйте ще раз</string>
-    <string name="ex_st_finished">Ваша подорож завершена. Дякуємо, що скористалися нашими послугами. Чекаємо на Вас наступного разу.</string>
-    <string name="ex_st_in_rout">Виконання замовлення водієм.</string>
-    <string name="ex_st_in_start_point">Машина прибула. Будь ласка пройдіть на посадку. Приємної подорожі</string>
+    <string name="ex_st_finished">Поїздку завершено. Дякуємо.</string>
+    <string name="ex_st_in_rout">Ви в дорозі</string>
+    <string name="ex_st_in_start_point">Машина на місці. Можна сідати.</string>
     <string name="pay_error_title">Помилка платежу</string>
     <string name="try_again_pay">"Спробуйте знову номер рахунку на оплату: "</string>
     <string name="no_cards_info">У вас немає підтверджених карток для оплати. Підтвердьте платіжну картку або оберіть Google Pay.</string>
@@ -527,7 +528,7 @@
     <string name="in_account">Увійти до акаунту</string>
     <string name="out_account_btn">Вийти з акаунту</string>
     <string name="in_google_bonus">Для отримання бонусів увійдіть до Google облікового запису</string>
-    <string name="cancel_btn_enable">Скасування замовлення тимчасово недоступне</string>
+    <string name="cancel_btn_enable">Скасування поки недоступне</string>
     <string name="cancel_error">Сталася помилка скасування замовлення. Зв\'яжіться з оператором.</string>
     <string name="del_acc_mes">Всі Ваші персональні дані та налаштування будуть видалені з додатку та наших серверів. Додаток буде закрит.</string>
     <string name="err_del_phone_fb">Помилка видалення облікового запису. Зверніться до оператора.</string>

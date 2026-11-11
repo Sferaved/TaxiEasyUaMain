@@ -36,7 +36,7 @@
     <string name="phone_edit">Исправить</string>
     <string name="format_phone">Формат ввода номера телефона: +38 093 666 55 44</string>
     <string name="sent_button">Отправить</string>
-    <string name="verify_internet">Проверьте интернет-соединение, позвоните оператору или перезагрузите приложение.</string>
+    <string name="verify_internet">Нет интернета. Позвоните оператору или перезапустите приложение.</string>
     <string name="save_button">Сохранить</string>
     <string name="you_this">"Вы сейчас здесь: "</string>
     <string name="make_rout_message">Сформируйте маршрут</string>
@@ -127,14 +127,14 @@
     <string name="text_result">Ваш маршрут</string>
     <string name="btn_again_text">Заказать еще</string>
     <string name="textStatus">Статус заказа</string>
-    <string name="cancel_order">Отменить заказ</string>
-    <string name="ex_st_1">Ожидается поиск машины (для предварительного заказа)</string>
-    <string name="ex_st_2">Найденна машина</string>
-    <string name="ex_st_2_1">Машина подана на посадку. Выходите Вас ждет водитель. </string>
+    <string name="cancel_order">Отменить</string>
+    <string name="ex_st_1">Ожидаем поиск машины</string>
+    <string name="ex_st_2">Машина найдена</string>
+    <string name="ex_st_2_1">Машина подана. Выходите, водитель ждёт.</string>
     <string name="ex_st_3">" Номер авто: "</string>
     <string name="ex_st_4">" Телефон водителя: "</string>
-    <string name="ex_st_5">" Ожидаемое время подачи: "</string>
-    <string name="ex_st_0">Происходит поиск машины</string>
+    <string name="ex_st_5">" Подача: "</string>
+    <string name="ex_st_0">Ищем машину</string>
     <string name="your_city">"Ваш город"</string>
     <string name="Kyiv_city">Киев</string>
     <string name="Odessa">Одесса</string>
@@ -343,7 +343,7 @@
     <string name="checking">Ожидайте, идет проверка данных.</string>
     <string name="time_out_text">Отмена поездки по таймауту оплаты.</string>
     <string name="pay_cancel">Поездка отменена из-за отсутствия успешной  оплаты в течении отведенного тайминга. Попробуйте еще.</string>
-    <string name="ex_st_canceled">Заказ отменен. Попробуйте еще.</string>
+    <string name="ex_st_canceled">Заказ отменён. Попробуйте ещё раз.</string>
     <string name="ex_st_canceled_no_pay">Заказ отправлен на отмену</string>
     <string name="ex_st_canceled_payment_failed">Заказ отменён: оплата не прошла</string>
     <string name="search">Поиск адреса...</string>
@@ -405,9 +405,10 @@
     <string name="order_continue">Продолжить просмотр</string>
     <string name="anr_message">Извините, пришлось немного подождать</string>
     <string name="change_tarrif">Выберите другой тариф</string>
-    <string name="checkout_status">Ожидайте, идет проверка статуса заказа...</string>
+    <string name="checkout_status">Проверяем статус заказа</string>
     <string name="check_order_mes">Ожидайте регистрации заказа...</string>
-    <string name="sent_cancel_message">Запрос на отмену заказа отправлен</string>
+    <string name="sent_cancel_message">Запрос на отмену отправлен</string>
+    <string name="cancel_awaiting_operator">Ожидайте отмены оператором</string>
     <string name="aplay_card_message">Ваша карта принята и отправлена ​​на проверку. Скоро она станет доступна для оплаты путешествий.</string>
     <string name="status_checkout_message">Запрошено обновление статуса. Ожидайте или уточните оператора</string>
     <string name="update_finish_mes">Обновление завершено. Программа будет перезапущена.</string>
@@ -456,7 +457,7 @@
     <string name="pos_chr">ул. Худякова, 1, Черновцы</string>
     <string name="pos_ltk">ул. Замковая, 7, г.Луцк</string>
     <string name="text_cost">Оплата</string>
-    <string name="textStatusCar">Информация об авто</string>
+    <string name="textStatusCar">Авто</string>
     <string name="timer_finished">Таймер завершен</string>
     <string name="close_timer">"Закрытие через "</string>
     <string name="time_info_to_start_point">Прибытие автомобиля через:</string>
@@ -482,8 +483,8 @@
     <string name="check_cost_message">Ожидайте, идет расчет стоимости поездки...</string>
 
     <string name="device">Устройство:</string>
-    <string name="time_car_found">Время поиска машины подошло к концу</string>
-    <string name="cancel_car_found_time">Нажмите кнопку Ок для отмены текущего заказа и перехода к новому заказу</string> <string name="alfa_test">(Альфа-тестирование)</string>
+    <string name="time_car_found">Время поиска закончилось</string>
+    <string name="cancel_car_found_time">Нажмите «Ок», чтобы отменить этот заказ и создать новый</string> <string name="alfa_test">(Альфа-тестирование)</string>
     <string name="update_timeout">Процесс обновления занял слишком много времени. Попробуйте позже.</string>
     <string name="update_error">Ошибка проверки обновлений. Проверьте подключение к интернету.</string>
     <string name="update_successful">Обновление прошло успешно!</string>
@@ -496,15 +497,15 @@
     <string name="save_btn">Сохранить</string>
 
     <string name="ok_add_cost">Подтвердить</string>
-    <string name="add_cost_btn">Хочу быстрее</string>
+    <string name="add_cost_btn">Быстрее</string>
     <string name="addCostBonusMessage">Для более быстрого поиска авто закажите за наличные или с оплатой поездки картой</string>
-    <string name="recounting_order">Происходит перерасчет заказа</string>
-    <string name="add_cost_processing">Доплата обрабатывается. Пожалуйста, подождите</string>
-    <string name="add_cost_processing_slow">Доплата занимает больше времени, чем обычно. Не закрывайте приложение — мы сообщим о результате</string>
+    <string name="recounting_order">Пересчитываем заказ</string>
+    <string name="add_cost_processing">Обрабатываем доплату. Подождите</string>
+    <string name="add_cost_processing_slow">Доплата занимает больше времени. Не закрывайте приложение.</string>
     <string name="add_cost_payment_failed">Доплата не прошла. Попробуйте ещё раз</string>
-    <string name="ex_st_finished">Ваша поездка завершена. Спасибо что воспользовались нашими услугами. Ждем Вас в следующий раз.</string>
-    <string name="ex_st_in_rout">Выполнение заказа водителем.</string>
-    <string name="ex_st_in_start_point">Машина прибыла. Пожалуйста проследуйте на посадку. Приятной поездки</string>
+    <string name="ex_st_finished">Поездка завершена. Спасибо.</string>
+    <string name="ex_st_in_rout">Вы в пути</string>
+    <string name="ex_st_in_start_point">Машина на месте. Можно садиться.</string>
     <string name="pay_error_title">Ошибка платежа</string>
     <string name="try_again_pay">"Попробуйте снова, номер счета на оплату: "</string>
     <string name="no_cards_info">У вас нет проверенных карт для оплаты. Подтвердите платёжную карту или выберите Google Pay.</string>
@@ -526,7 +527,7 @@
     <string name="in_account">Войти в аккаунт</string>
     <string name="out_account_btn">Выйти из аккаунта</string>
     <string name="in_google_bonus">Для получения бонусов войдите в Google аккаунт</string>
-    <string name="cancel_btn_enable">Отмена заказа временно недоступна</string>
+    <string name="cancel_btn_enable">Отмена пока недоступна</string>
     <string name="cancel_error">Произошла ошибка отмены заказа. Свяжитесь с оператором.</string>
     <string name="del_acc_mes">Все Ваши персоналные данные и настройки будут удалены с приложения и с наших серверов. Приложение будт закрыто.</string>
     <string name="err_del_phone_fb">Ошибка удаления аккаунта. Обратитесь к оператору.</string>
