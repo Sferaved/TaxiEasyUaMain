@@ -6,40 +6,36 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_visicom"
-            android:icon="@android:drawable/ic_media_play"
+            android:icon="@drawable/ic_shortcut_order"
             android:title="@string/main_page" />
 
         <item
             android:id="@+id/nav_cancel"
-            android:icon="@drawable/ic_menu_gallery"
+            android:icon="@drawable/ic_nav_orders"
             android:title="@string/order_to_cancel" />
-<!--        <item-->
-<!--            android:id="@+id/nav_gallery"-->
-<!--            android:icon="@drawable/ic_menu_gallery"-->
-<!--            android:title="@string/menu_gallery" />-->
         <item
             android:id="@+id/nav_uid"
-            android:icon="@drawable/ic_menu_gallery"
+            android:icon="@drawable/ic_nav_history"
             android:title="@string/uid_menu" />
         <item
             android:id="@+id/nav_bonus"
-            android:icon="@drawable/ic_menu_gallery"
+            android:icon="@drawable/ic_star"
             android:title="@string/my_bonus_menu" />
         <item
             android:id="@+id/nav_card"
-            android:icon="@drawable/ic_menu_gallery"
+            android:icon="@drawable/ic_credit_card"
             android:title="@string/my_card_pay" />
         <item
             android:id="@+id/nav_account"
-            android:icon="@drawable/ic_menu_gallery"
+            android:icon="@drawable/ic_nav_account"
             android:title="@string/account_menu" />
         <item
             android:id="@+id/nav_author"
-            android:icon="@android:drawable/ic_menu_info_details"
+            android:icon="@drawable/ic_info"
             android:title="@string/author_about" />
         <item
             android:id="@+id/nav_about"
-            android:icon="@drawable/ic_menu_gallery"
+            android:icon="@drawable/ic_nav_privacy"
             android:title="@string/conf" />
 
     </group>

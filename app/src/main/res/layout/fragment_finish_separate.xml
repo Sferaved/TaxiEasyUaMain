@@ -43,13 +43,13 @@
             android:id="@+id/text_full_message"
 
            android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="wrap_content"
             android:layout_marginTop="4sp"
             android:background="@drawable/input"
             android:ems="10"
             android:fontFamily="@font/light"
-            android:gravity="left"
+            android:gravity="center_vertical|start"
             android:minHeight="@dimen/textView_minHeight"
             android:textColor="#D9D9D9"
             android:textSize="@dimen/textView_textSize"
@@ -76,13 +76,13 @@
             android:id="@+id/text_cost_message"
 
            android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:background="@drawable/input"
             android:ems="10"
             android:fontFamily="@font/light"
-            android:gravity="left"
+            android:gravity="center_vertical|start"
             android:minHeight="@dimen/textView_minHeight"
             android:textColor="#D9D9D9"
             android:textSize="@dimen/textView_textSize"
@@ -164,7 +164,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4sp"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:fontFamily="@font/light"
             android:text="@string/textStatus"
             android:textColor="#B0BEC5"
@@ -176,7 +176,7 @@
         <TextView
             android:id="@+id/countdownTextView"
             android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="8dp"
@@ -193,9 +193,9 @@
             android:id="@+id/text_status"
 
             android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="6dp"
             android:background="@drawable/input"
             android:ems="10"
             android:fontFamily="@font/light"
@@ -210,7 +210,7 @@
             android:textSize="@dimen/textView_textSize"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/progressSteps"
+            app:layout_constraintTop_toBottomOf="@+id/text_title_status"
             tools:ignore="RtlHardcoded" />
 
         <TextView
@@ -231,7 +231,7 @@
             android:id="@+id/text_status_car"
 
            android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:background="@drawable/input"
@@ -289,7 +289,7 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_again"
             android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="48dp"
             android:visibility="gone"
             android:layout_marginTop="8dp"
@@ -311,7 +311,7 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_add_cost"
            android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="48dp"
             android:visibility="gone"
             android:layout_marginTop="8dp"
@@ -333,7 +333,7 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnCallAdmin"
             android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="@dimen/button_height"
             android:layout_marginTop="8dp"
             android:background="@drawable/buttons"
@@ -354,7 +354,7 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_cancel_order"
             android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+            app:layout_constraintWidth_percent="0.92"
             android:layout_height="48dp"
             android:visibility="gone"
             android:layout_marginTop="8sp"
