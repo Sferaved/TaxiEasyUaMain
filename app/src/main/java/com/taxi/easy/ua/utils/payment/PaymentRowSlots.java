@@ -3,8 +3,8 @@ package com.taxi.easy.ua.utils.payment;
 import android.view.View;
 
 /**
- * Trailing icons of a payment row stay in fixed columns.
- * A hidden mark or delete control keeps its slot so the checkmarks line up.
+ * The check mark keeps a fixed slot. The delete control is not shown:
+ * a saved card is removed by swiping the row.
  */
 public final class PaymentRowSlots {
 
@@ -16,6 +16,7 @@ public final class PaymentRowSlots {
     }
 
     public static int deleteVisibility(boolean canDelete) {
-        return canDelete ? View.VISIBLE : View.INVISIBLE;
+        // Basket stays off the row; a saved card is removed by swipe.
+        return View.GONE;
     }
 }

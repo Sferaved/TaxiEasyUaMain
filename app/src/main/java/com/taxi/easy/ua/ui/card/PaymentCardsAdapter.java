@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.taxi.easy.ua.R;
@@ -66,18 +67,8 @@ public class PaymentCardsAdapter extends RecyclerView.Adapter<PaymentCardsAdapte
         boolean selected = position == selectedPosition;
         holder.check.setVisibility(PaymentRowSlots.markVisibility(selected));
 
-        holder.delete.setVisibility(PaymentRowSlots.deleteVisibility(true));
-        holder.delete.setClickable(true);
-        holder.delete.setFocusable(true);
-        holder.delete.setOnClickListener(v -> {
-            int adapterPos = holder.getBindingAdapterPosition();
-            if (adapterPos == RecyclerView.NO_POSITION) {
-                return;
-            }
-            if (listener != null) {
-                listener.onCardDelete(cards.get(adapterPos), adapterPos);
-            }
-        });
+        holder.delete.setVisibility(View.GONE);
+        holder.delete.setOnClickListener(null);
 
         holder.itemView.setOnClickListener(v -> {
             int adapterPos = holder.getBindingAdapterPosition();
@@ -95,6 +86,14 @@ public class PaymentCardsAdapter extends RecyclerView.Adapter<PaymentCardsAdapte
     @Override
     public int getItemCount() {
         return cards.size();
+    }
+
+    @Nullable
+    public Map<String, String> cardAt(int position) {
+        if (position < 0 || position >= cards.size()) {
+            return null;
+        }
+        return cards.get(position);
     }
 
     static final class CardHolder extends RecyclerView.ViewHolder {

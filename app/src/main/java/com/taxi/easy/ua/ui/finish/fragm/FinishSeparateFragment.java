@@ -3968,12 +3968,16 @@ public class FinishSeparateFragment extends Fragment {
             }
             Logger.d(context, TAG, "reconcile: switched to selected order " + navigationOrderUid);
         } else if (explicitSelection) {
-            canceled = false;
-            cancel_btn_click = false;
-            cancelRequestInFlight = false;
-            setCancelButtonBusy(false);
-            ExecutionStatusViewModel.setCancelInFlightPref(false);
-            ExecutionStatusViewModel.setUserCanceledPref(false);
+            if (!OrderCancelResponseHelper.shouldKeepCancelWatchOnSameOrder(
+                    ExecutionStatusViewModel.isCancelInFlightPref(),
+                    ExecutionStatusViewModel.isCancelAwaitingOperatorPref())) {
+                canceled = false;
+                cancel_btn_click = false;
+                cancelRequestInFlight = false;
+                setCancelButtonBusy(false);
+                ExecutionStatusViewModel.setCancelInFlightPref(false);
+                ExecutionStatusViewModel.setUserCanceledPref(false);
+            }
             uid = navigationOrderUid;
             MainActivity.uid = navigationOrderUid;
             if (uid_Double == null && receivedMap != null) {
@@ -4346,8 +4350,11 @@ public class FinishSeparateFragment extends Fragment {
             if (isViewingCompletedOrder()) {
                 Logger.d(context, TAG, "onResume: archived completed order — read-only");
                 applyArchivedCompletedOrderUi();
-            } else if (ExecutionStatusViewModel.isCancelAwaitingOperatorPref()) {
-                Logger.d(context, TAG, "onResume: awaiting operator cancel");
+            } else if (OrderCancelResponseHelper.shouldResumeCancelStatusWatch(
+                    isCancelUiShown(),
+                    ExecutionStatusViewModel.isCancelAwaitingOperatorPref(),
+                    cancelFailureWatchRemaining != 0)) {
+                Logger.d(context, TAG, "onResume: resume cancel status watch");
                 resumeOperatorCancelWatch();
             } else {
                 Logger.d(context, TAG, "onResume: skip polling — cancel UI active");

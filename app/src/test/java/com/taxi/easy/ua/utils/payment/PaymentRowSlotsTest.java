@@ -15,8 +15,8 @@ public class PaymentRowSlotsTest {
     }
 
     @Test
-    public void deleteStaysInColumnWhenRowCannotBeRemoved() {
-        assertEquals(View.VISIBLE, PaymentRowSlots.deleteVisibility(true));
-        assertEquals(View.INVISIBLE, PaymentRowSlots.deleteVisibility(false));
+    public void deleteIconIsHiddenSoCheckmarkIsNotCrowded() {
+        assertEquals(View.GONE, PaymentRowSlots.deleteVisibility(true));
+        assertEquals(View.GONE, PaymentRowSlots.deleteVisibility(false));
     }
 }

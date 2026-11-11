@@ -114,4 +114,20 @@ public class OrderCancelResponseHelperTest {
         assertFalse(OrderCancelResponseHelper.shouldRefreshStatusAfterCanceledPush(
                 false, false, false));
     }
+
+    @Test
+    public void keepCancelWatch_whenSameOrderResumeWaitsForDispatch() {
+        assertTrue(OrderCancelResponseHelper.shouldKeepCancelWatchOnSameOrder(true, true));
+        assertTrue(OrderCancelResponseHelper.shouldKeepCancelWatchOnSameOrder(true, false));
+        assertTrue(OrderCancelResponseHelper.shouldKeepCancelWatchOnSameOrder(false, true));
+        assertFalse(OrderCancelResponseHelper.shouldKeepCancelWatchOnSameOrder(false, false));
+    }
+
+    @Test
+    public void resumeCancelStatusWatch_afterBackgroundUntilScreenShowsCanceled() {
+        assertTrue(OrderCancelResponseHelper.shouldResumeCancelStatusWatch(false, true, false));
+        assertTrue(OrderCancelResponseHelper.shouldResumeCancelStatusWatch(false, false, true));
+        assertFalse(OrderCancelResponseHelper.shouldResumeCancelStatusWatch(true, true, true));
+        assertFalse(OrderCancelResponseHelper.shouldResumeCancelStatusWatch(false, false, false));
+    }
 }

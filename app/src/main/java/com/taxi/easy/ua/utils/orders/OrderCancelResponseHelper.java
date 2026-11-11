@@ -101,4 +101,29 @@ public final class OrderCancelResponseHelper {
     ) {
         return !orderAlreadyCanceled && operatorConfirmationPending && !pushAccepted;
     }
+
+    /**
+     * Возврат на тот же заказ не должен сбрасывать ожидание подтверждения отмены.
+     * Иначе экран остаётся на «очікуємо диспетчера», а опрос статуса больше не идёт.
+     */
+    public static boolean shouldKeepCancelWatchOnSameOrder(
+            boolean cancelInFlight,
+            boolean awaitingOperator
+    ) {
+        return cancelInFlight || awaitingOperator;
+    }
+
+    /**
+     * После фона нужно снова спросить статус, пока отмена не подтверждена на экране.
+     */
+    public static boolean shouldResumeCancelStatusWatch(
+            boolean cancelUiAlreadyShown,
+            boolean awaitingOperator,
+            boolean cancelWatchStillArmed
+    ) {
+        if (cancelUiAlreadyShown) {
+            return false;
+        }
+        return awaitingOperator || cancelWatchStillArmed;
+    }
 }

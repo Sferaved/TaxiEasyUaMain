@@ -15,6 +15,8 @@ import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -65,6 +67,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.payment.PaymentRowSlots;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -210,6 +213,7 @@ public class CardFragment extends Fragment {
             cardsRecycler.setLayoutManager(new LinearLayoutManager(context));
             cardsAdapter = new PaymentCardsAdapter();
             cardsRecycler.setAdapter(cardsAdapter);
+            attachCardSwipeToDelete();
             cardsAdapter.setListener(new PaymentCardsAdapter.Listener() {
                 @Override
                 public void onCardSelected(@NonNull Map<String, String> card, int position) {
@@ -282,6 +286,55 @@ public class CardFragment extends Fragment {
         });
 
         cardViews();
+    }
+
+    private void attachCardSwipeToDelete() {
+        ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
+                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            private final ColorDrawable background = new ColorDrawable(0xFFE53935);
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getBindingAdapterPosition();
+                if (cardsAdapter == null || position == RecyclerView.NO_POSITION) {
+                    return;
+                }
+                Map<String, String> card = cardsAdapter.cardAt(position);
+                cardsAdapter.notifyItemChanged(position);
+                if (card != null) {
+                    confirmDeleteCard(card);
+                }
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas canvas,
+                                    @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder,
+                                    float dX,
+                                    float dY,
+                                    int actionState,
+                                    boolean isCurrentlyActive) {
+                View item = viewHolder.itemView;
+                if (dX > 0f) {
+                    background.setBounds(item.getLeft(), item.getTop(),
+                            item.getLeft() + (int) dX, item.getBottom());
+                    background.draw(canvas);
+                } else if (dX < 0f) {
+                    background.setBounds(item.getRight() + (int) dX, item.getTop(),
+                            item.getRight(), item.getBottom());
+                    background.draw(canvas);
+                }
+                super.onChildDraw(canvas, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+        });
+        helper.attachToRecyclerView(cardsRecycler);
     }
 
     private void refreshCashSelection(boolean selected) {

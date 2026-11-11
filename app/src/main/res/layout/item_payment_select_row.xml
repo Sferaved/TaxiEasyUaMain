@@ -61,9 +61,8 @@
         android:padding="8dp"
         android:scaleType="centerInside"
         android:src="@drawable/ic_baseline_delete_24"
-        android:visibility="invisible"
-        app:tint="@color/uklon_on_surface_secondary"
-        tools:visibility="visible" />
+        android:visibility="gone"
+        app:tint="@color/uklon_on_surface_secondary" />
 
     <ImageView
         android:id="@+id/paymentRowCheck"
