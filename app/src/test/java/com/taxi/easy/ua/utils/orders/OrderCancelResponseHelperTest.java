@@ -70,6 +70,12 @@ public class OrderCancelResponseHelperTest {
     }
 
     @Test
+    public void orderNotFound_isNotConfirmedPendingOrFailed() {
+        assertEquals(OrderCancelResponseHelper.Kind.UNKNOWN,
+                OrderCancelResponseHelper.classify("Замовлення не знайдено."));
+    }
+
+    @Test
     public void ignoreCanceledPush_whenCancelAwaitingButOrderStillActive() {
         assertFalse(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
                 false, true, false, -1));

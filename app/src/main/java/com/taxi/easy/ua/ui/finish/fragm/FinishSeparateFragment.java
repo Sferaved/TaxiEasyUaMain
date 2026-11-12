@@ -1753,7 +1753,7 @@ public class FinishSeparateFragment extends Fragment {
         setCancelButtonBusy(false);
         Toast.makeText(context, R.string.error_cancelling_order, Toast.LENGTH_LONG).show();
         if (text_status != null) {
-            text_status.setText(R.string.verify_internet);
+            text_status.setText(R.string.error_cancelling_order);
         }
         if (viewModel != null) {
             viewModel.setStatusNalUpdate(false);
