@@ -33,6 +33,21 @@ public class ServerOutageHelperTest {
     }
 
     @Test
+    public void offlineDevice_doesNotOpenOutageScreen() {
+        assertFalse(ServerOutageHelper.shouldShowOutageScreen(new UnknownHostException("taxi"), false));
+        assertFalse(ServerOutageHelper.shouldShowOutageScreen(new ConnectException("refused"), false));
+        assertFalse(ServerOutageHelper.shouldShowOutageScreen(new SocketTimeoutException("timeout"), false));
+    }
+
+    @Test
+    public void onlineDevice_opensOutageScreenOnlyWhenServerUnreachable() {
+        assertTrue(ServerOutageHelper.shouldShowOutageScreen(new UnknownHostException("taxi"), true));
+        assertTrue(ServerOutageHelper.shouldShowOutageScreen(new ConnectException("refused"), true));
+        assertFalse(ServerOutageHelper.shouldShowOutageScreen(new IOException("canceled"), true));
+        assertFalse(ServerOutageHelper.shouldShowOutageScreen(null, true));
+    }
+
+    @Test
     public void ordinaryIoAndRuntime_areNotOutage() {
         assertFalse(ServerOutageHelper.isServerUnreachable(new IOException("unexpected end of stream")));
         assertFalse(ServerOutageHelper.isServerUnreachable(new RuntimeException("parse")));

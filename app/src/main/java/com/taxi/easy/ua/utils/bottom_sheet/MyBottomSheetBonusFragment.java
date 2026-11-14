@@ -582,6 +582,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
+        if (context == null || context.isFinishing()
+                || context.findViewById(R.id.nav_host_fragment_content_main) == null) {
+            return;
+        }
         if (rout != null && rout.equals("home")) {
             HomeFragment.setBtnBonusName(context);
         }

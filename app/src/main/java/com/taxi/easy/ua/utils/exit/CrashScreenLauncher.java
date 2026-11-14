@@ -10,6 +10,7 @@ import android.os.SystemClock;
 
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -33,16 +34,16 @@ public final class CrashScreenLauncher {
         if (isAnrProcess()) {
             return;
         }
+        Context context = applicationContext();
+        if (context == null || !NetworkUtils.isNetworkAvailable(context)) {
+            return;
+        }
         long now = SystemClock.elapsedRealtime();
         synchronized (CrashScreenLauncher.class) {
             if (now - lastShownElapsedMs < COOLDOWN_MS) {
                 return;
             }
             lastShownElapsedMs = now;
-        }
-        Context context = applicationContext();
-        if (context == null) {
-            return;
         }
         Runnable launch = () -> start(context);
         if (Looper.myLooper() == Looper.getMainLooper()) {

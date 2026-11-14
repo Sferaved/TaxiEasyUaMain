@@ -25,6 +25,14 @@ public final class ServerOutageHelper {
         return processName != null && processName.endsWith(ANR_PROCESS_SUFFIX);
     }
 
+    /**
+     * Экран «Упс» нужен, когда сеть есть, а сервер не отвечает.
+     * Без сети достаточно плашки «нет интернета».
+     */
+    public static boolean shouldShowOutageScreen(Throwable error, boolean deviceHasNetwork) {
+        return deviceHasNetwork && isServerUnreachable(error);
+    }
+
     public static boolean isServerUnreachable(Throwable error) {
         Throwable current = error;
         int depth = 0;

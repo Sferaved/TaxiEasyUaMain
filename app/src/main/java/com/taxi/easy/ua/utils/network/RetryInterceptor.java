@@ -153,7 +153,7 @@ public class RetryInterceptor implements Interceptor {
     }
 
     private IOException fail(IOException error) {
-        if (ServerOutageHelper.isServerUnreachable(error)) {
+        if (ServerOutageHelper.shouldShowOutageScreen(error, isNetworkConnected())) {
             CrashScreenLauncher.show();
         }
         return error;
