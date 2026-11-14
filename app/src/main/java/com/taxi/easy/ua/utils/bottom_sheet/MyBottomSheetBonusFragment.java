@@ -385,10 +385,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
             Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
             if (rectoken.isEmpty()) {
-                String message = context.getString(R.string.no_cards_info);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-                dismiss();
+                // После смены города список карт мог ещё не подтянуться — синхронизируем и повторяем проверку.
+                trySelectCardAfterCitySync();
             } else {
                 if(userPayPermissions[1].equals("0")) {
                     setCardAndGooglePayEnabled(false);
@@ -500,6 +498,50 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 Logger.d(context, TAG, "База данных закрыта");
             }
         }
+    }
+
+    private void trySelectCardAfterCitySync() {
+        if (progressBar != null) {
+            progressBar.setVisibility(View.VISIBLE);
+        }
+        String syncCity = city;
+        if (!WfpUtils.isCityValidForCardFetch(syncCity)) {
+            syncCity = WfpUtils.getCurrentCity(context);
+        }
+        if (!WfpUtils.isCityValidForCardFetch(syncCity)) {
+            showNoCardsAndDismiss();
+            return;
+        }
+        WfpUtils.fetchCardTokenWfpAsync(syncCity, context, success -> {
+            if (!isAdded()) {
+                return;
+            }
+            if (progressBar != null) {
+                progressBar.setVisibility(GONE);
+            }
+            String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
+            Logger.d(context, TAG, "payWfp after sync: rectoken " + rectoken + " success=" + success);
+            if (rectoken.isEmpty() || userPayPermissions[1].equals("0")) {
+                showNoCardsAndDismiss();
+                return;
+            }
+            try {
+                paymentType(arrayCode[2], context);
+            } catch (MalformedURLException | UnsupportedEncodingException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+                showNoCardsAndDismiss();
+            }
+        });
+    }
+
+    private void showNoCardsAndDismiss() {
+        if (!isAdded()) {
+            return;
+        }
+        String message = context.getString(R.string.no_cards_info);
+        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+        bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+        dismiss();
     }
 
     private void paymentType(String paymentCode, Context context) throws MalformedURLException, UnsupportedEncodingException {

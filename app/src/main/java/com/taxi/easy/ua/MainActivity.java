@@ -522,23 +522,33 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             // Установка обработчиков нажатий
             View.OnClickListener clickListener = v -> {
                 Logger.d(this, TAG, "Обработчик нажатия, сеть доступна: " + NetworkUtils.isNetworkAvailable(this));
-                if (NetworkUtils.isNetworkAvailable(this)) {
-                    Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
-                    if (navController.getCurrentDestination().getId() != R.id.nav_finish_separate) {
-                        Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
-                        navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_city, true)
-                                .build());
-                    }
-                } else {
+                if (!NetworkUtils.isNetworkAvailable(this)) {
                     Toast.makeText(this, R.string.network_no_internet, Toast.LENGTH_LONG).show();
                     Logger.w(this, TAG, "NO INTERNET - Showing toast message");
+                    return;
                 }
+                NavDestination current = navController.getCurrentDestination();
+                if (current == null || isCitySwitchBlockedDestination(current.getId())) {
+                    Logger.d(this, "CityCheckFrgment", "City switch blocked on current screen");
+                    return;
+                }
+                Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
+                navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_city, true)
+                        .build());
             };
-            if (Objects.requireNonNull(navController.getCurrentDestination()).getId() != R.id.nav_finish_separate) {
+            int currentDestId = Objects.requireNonNull(navController.getCurrentDestination()).getId();
+            if (!isCitySwitchBlockedDestination(currentDestId)) {
                 Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
                 titleTextView.setOnClickListener(clickListener);
                 button1.setOnClickListener(clickListener);
+            } else {
+                titleTextView.setOnClickListener(null);
+                titleTextView.setClickable(false);
+                if (button1 != null) {
+                    button1.setOnClickListener(null);
+                    button1.setClickable(false);
+                }
             }
 
 
@@ -3863,6 +3873,64 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
                 getSupportActionBar().show();
             }
             binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        }
+        applyCitySwitchClickability(destinationId);
+    }
+
+    /** На экране способов оплаты и активного заказа смену города блокируем. */
+    public static boolean isCitySwitchBlockedDestination(int destinationId) {
+        return destinationId == R.id.nav_card
+                || destinationId == R.id.nav_finish_separate
+                || destinationId == R.id.nav_card_ver;
+    }
+
+    private void applyCitySwitchClickability(int destinationId) {
+        if (getSupportActionBar() == null || getSupportActionBar().getCustomView() == null) {
+            return;
+        }
+        View customView = getSupportActionBar().getCustomView();
+        TextView titleTextView = customView.findViewById(R.id.action_bar_title);
+        View cityButton = customView.findViewById(R.id.button1);
+        boolean blocked = isCitySwitchBlockedDestination(destinationId);
+        if (blocked) {
+            if (titleTextView != null) {
+                titleTextView.setOnClickListener(null);
+                titleTextView.setClickable(false);
+            }
+            if (cityButton != null) {
+                cityButton.setOnClickListener(null);
+                cityButton.setClickable(false);
+            }
+            if (button1 != null) {
+                button1.setOnClickListener(null);
+                button1.setClickable(false);
+            }
+            return;
+        }
+        View.OnClickListener clickListener = v -> {
+            if (!NetworkUtils.isNetworkAvailable(this)) {
+                Toast.makeText(this, R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (navController.getCurrentDestination() != null
+                    && isCitySwitchBlockedDestination(navController.getCurrentDestination().getId())) {
+                return;
+            }
+            navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_city, true)
+                    .build());
+        };
+        if (titleTextView != null) {
+            titleTextView.setClickable(true);
+            titleTextView.setOnClickListener(clickListener);
+        }
+        if (cityButton != null) {
+            cityButton.setClickable(true);
+            cityButton.setOnClickListener(clickListener);
+        }
+        if (button1 != null) {
+            button1.setClickable(true);
+            button1.setOnClickListener(clickListener);
         }
     }
 

@@ -83,6 +83,17 @@ public class WfpUtilsResolveActiveRectokenTest {
     }
 
     @Test
+    public void refreshCardsAfterCityChange_clearsLocalCardsWhenCityInvalid() {
+        insertWfpCard("rectoken-old", "1");
+
+        // "all" — невалидный город для fetch: только очистка без WorkManager.
+        WfpUtils.refreshCardsAfterCityChange(context, "all");
+
+        assertEquals("", WfpUtils.resolveActiveWfpRectoken(context));
+        assertEquals("", queryRectokenCheck("rectoken-old"));
+    }
+
+    @Test
     public void storedCardListMatchesCity_requiresSameNonEmptyCity() {
         assertEquals(true, WfpUtils.storedCardListMatchesCity("Kyiv City", "Kyiv City"));
         assertEquals(false, WfpUtils.storedCardListMatchesCity("Kyiv City", "OdessaTest"));

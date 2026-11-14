@@ -219,22 +219,35 @@ public class WfpUtils {
 
         }
 
-        WfpCardSyncGuard.invalidatePendingFetches();
+        clearLocalWfpCards(context, current);
 
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+    }
 
-        try {
-
-            database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
-
-        } finally {
-
-            database.close();
-
+    /**
+     * После выбора города: сбросить чужой список карт и подтянуть карты для нового города.
+     * Вызывать после записи города в {@link MainActivity#CITY_INFO}.
+     */
+    public static void refreshCardsAfterCityChange(Context context, String city) {
+        if (context == null) {
+            return;
         }
+        WfpCardSyncGuard.invalidatePendingFetches();
+        clearLocalWfpCards(context, city == null ? "" : city);
+        if (isCityValidForCardFetch(city)) {
+            enqueueCardTokenFetch(context, city);
+            Logger.d(context, TAG, "refreshCardsAfterCityChange: enqueue for " + city);
+        }
+    }
 
-        markCardsLoadedForCity(context, current);
-
+    private static void clearLocalWfpCards(Context context, @NonNull String markCity) {
+        WfpCardSyncGuard.invalidatePendingFetches();
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
+        } finally {
+            database.close();
+        }
+        markCardsLoadedForCity(context, markCity);
     }
 
 

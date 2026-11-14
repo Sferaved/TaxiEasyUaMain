@@ -43,6 +43,7 @@ import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -946,6 +947,8 @@ public class CityCheckActivity extends AppCompatActivity {
                 new String[] { "1" });
         database.close();
 
+        WfpUtils.refreshCardsAfterCityChange(getApplicationContext(), city);
+
         List<String> settings = new ArrayList<>();
 
         settings.add(Double.toString(startLat));
@@ -1395,6 +1398,8 @@ public class CityCheckActivity extends AppCompatActivity {
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
+
+        WfpUtils.refreshCardsAfterCityChange(getApplicationContext(), city);
 
 
 

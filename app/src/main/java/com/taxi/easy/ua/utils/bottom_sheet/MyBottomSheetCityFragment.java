@@ -491,13 +491,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     private void getCardTokenWfp(String city) {
-        WfpUtils.fetchCardTokenWfpAsync(city, context, success -> {
-            if (!success && fragmentManager != null) {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment =
-                        new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            }
-        });
+        WfpUtils.refreshCardsAfterCityChange(context, city);
     }
 
     private void pay_system(String city) {

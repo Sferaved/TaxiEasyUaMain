@@ -760,7 +760,7 @@ public class CityFinder {
 
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
             AutoLocationAfterCityHelper.markCityLoaded();
-            WfpUtils.enqueueCardTokenFetch(context, city);
+            WfpUtils.refreshCardsAfterCityChange(context, city);
 
             // Навигация
             Activity activity = activityRef.get();
