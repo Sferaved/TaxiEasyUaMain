@@ -7,9 +7,11 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.exit.CrashScreenLauncher;
 import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.io.File;
 
@@ -53,14 +55,18 @@ public final class MantisBugReportSender {
         String issueSummary = MantisIssueUrlHelper.buildIssueSummary(appLabel, versionName, problemSummary);
         File attachment = (logFile != null && logFile.exists() && logFile.length() > 0) ? logFile : null;
 
-        int issueId = new MantisBugReportClient().createIssue(
+        MantisIssueModels.CreateIssueResponse created = new MantisBugReportClient().createIssue(
                 mantisConfig,
+                BaseUrlHelper.fromPrefs(new SharedPreferencesHelper(context)),
                 issueSummary,
                 fullDescription,
                 attachment
         );
 
-        String issueUrl = MantisIssueUrlHelper.buildIssueViewUrl(mantisConfig.baseUrl, issueId);
+        int issueId = created.issue.id;
+        String issueUrl = created.viewUrl != null && !created.viewUrl.trim().isEmpty()
+                ? created.viewUrl.trim()
+                : MantisIssueUrlHelper.buildIssueViewUrl(MantisIssueUrlHelper.PUBLIC_ISSUE_UI, issueId);
         return new Result(issueId, issueUrl);
     }
 

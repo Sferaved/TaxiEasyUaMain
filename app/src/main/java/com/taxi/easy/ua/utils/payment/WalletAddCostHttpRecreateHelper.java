@@ -1,5 +1,6 @@
 package com.taxi.easy.ua.utils.payment;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.gson.JsonElement;
@@ -40,6 +41,14 @@ public final class WalletAddCostHttpRecreateHelper {
             return fromClient;
         }
         return costFromObject(webCost);
+    }
+
+    /**
+     * ART падает на {@code switch (null)} с NPE getClass(). Пустой статус уходит в default.
+     */
+    @NonNull
+    public static String switchableTransactionStatus(@Nullable String transactionStatus) {
+        return transactionStatus == null ? "" : transactionStatus;
     }
 
     /** Apply immediately when CHARGE response includes uid; else wait for order_uid_new. */

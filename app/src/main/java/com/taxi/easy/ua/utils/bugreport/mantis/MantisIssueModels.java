@@ -37,6 +37,8 @@ public final class MantisIssueModels {
 
     public static class CreateIssueResponse {
         public IssueRef issue;
+        @SerializedName("view_url")
+        public String viewUrl;
     }
 
     public static class IssueRef {

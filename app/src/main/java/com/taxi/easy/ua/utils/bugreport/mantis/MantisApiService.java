@@ -6,7 +6,7 @@ import retrofit2.http.POST;
 
 public interface MantisApiService {
 
-    @POST("issues")
+    @POST(MantisIssueUrlHelper.TAXI_CREATE_ISSUE_PATH)
     Call<MantisIssueModels.CreateIssueResponse> createIssue(
             @Body MantisIssueModels.CreateIssueRequest request
     );

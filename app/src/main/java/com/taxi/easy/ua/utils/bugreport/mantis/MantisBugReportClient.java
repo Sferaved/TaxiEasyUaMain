@@ -25,10 +25,15 @@ public class MantisBugReportClient {
 
     private static final String TAG = "MantisBugReportClient";
 
-    public int createIssue(@NonNull MantisConfig config,
-                           @NonNull String summary,
-                           @NonNull String description,
-                           @Nullable File logFile) throws IOException {
+    public MantisIssueModels.CreateIssueResponse createIssue(@NonNull MantisConfig config,
+                                                             @NonNull String taxiBaseUrl,
+                                                             @NonNull String summary,
+                                                             @NonNull String description,
+                                                             @Nullable File logFile) throws IOException {
+        String retrofitBase = MantisIssueUrlHelper.buildTaxiBugReportBaseUrl(taxiBaseUrl);
+        if (retrofitBase.isEmpty()) {
+            throw new IOException("Немає адреси сервера таксі");
+        }
         MantisIssueModels.CreateIssueRequest request = new MantisIssueModels.CreateIssueRequest();
         request.summary = summary;
         request.description = description;
@@ -41,7 +46,7 @@ public class MantisBugReportClient {
             );
         }
 
-        MantisApiService apiService = buildApiService(config);
+        MantisApiService apiService = buildApiService(config, retrofitBase);
         Response<MantisIssueModels.CreateIssueResponse> response =
                 apiService.createIssue(request).execute();
 
@@ -51,11 +56,12 @@ public class MantisBugReportClient {
             throw new IOException("Mantis HTTP " + response.code());
         }
 
-        return response.body().issue.id;
+        return response.body();
     }
 
     @NonNull
-    private static MantisApiService buildApiService(@NonNull MantisConfig config) {
+    private static MantisApiService buildApiService(@NonNull MantisConfig config,
+                                                    @NonNull String retrofitBase) {
         Interceptor authInterceptor = chain -> {
             Request original = chain.request();
             Request authenticated = original.newBuilder()
@@ -74,7 +80,7 @@ public class MantisBugReportClient {
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(MantisIssueUrlHelper.buildRetrofitBaseUrl(config.baseUrl))
+                .baseUrl(retrofitBase)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();

@@ -26,10 +26,16 @@ public class MantisIssueUrlHelperTest {
     }
 
     @Test
-    public void buildRetrofitBaseUrl_addsApiRestSuffix() {
+    public void buildTaxiBugReportBaseUrl_usesTaxiHostNotMantisRest() {
         assertEquals(
-                "https://bugs.example.com/api/rest/",
-                MantisIssueUrlHelper.buildRetrofitBaseUrl("https://bugs.example.com")
+                "https://t.easy-order-taxi.site/",
+                MantisIssueUrlHelper.buildTaxiBugReportBaseUrl("https://t.easy-order-taxi.site/")
         );
+        assertEquals(
+                "https://m.easy-order-taxi.site/",
+                MantisIssueUrlHelper.buildTaxiBugReportBaseUrl("https://m.easy-order-taxi.site")
+        );
+        assertEquals("", MantisIssueUrlHelper.buildTaxiBugReportBaseUrl("  "));
+        assertEquals("api/mantis/issues", MantisIssueUrlHelper.TAXI_CREATE_ISSUE_PATH);
     }
 }

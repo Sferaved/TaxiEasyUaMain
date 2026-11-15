@@ -505,7 +505,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 if (response.isSuccessful() && response.body() != null) {
                     PurchaseResponse statusResponse = response.body();
 
-                    String orderStatus = statusResponse.getTransactionStatus();
+                    String orderStatus = WalletAddCostHttpRecreateHelper.switchableTransactionStatus(
+                            statusResponse.getTransactionStatus());
                     Logger.d(context, TAG, "1 Transaction Status: " + orderStatus);
 
 

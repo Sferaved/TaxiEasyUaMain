@@ -57,6 +57,31 @@ public class WalletAddCostHttpRecreateHelperTest {
     }
 
     @Test
+    public void switchableTransactionStatus_nullBecomesEmptyForSwitch() {
+        assertEquals("", WalletAddCostHttpRecreateHelper.switchableTransactionStatus(null));
+        assertEquals("InProcessing", WalletAddCostHttpRecreateHelper.switchableTransactionStatus("InProcessing"));
+    }
+
+    @Test
+    public void purchaseResponse_dispatchCancelPending_withoutStatus_isSwitchable() {
+        PurchaseResponse response = new Gson().fromJson(
+                "{\"response\":\"dispatch_cancel_pending\"}",
+                PurchaseResponse.class);
+        assertEquals("", WalletAddCostHttpRecreateHelper.switchableTransactionStatus(
+                response.getTransactionStatus()));
+    }
+
+    @Test
+    public void purchaseResponse_dispatchCancelPending_withStatus_staysInProcessing() {
+        PurchaseResponse response = new Gson().fromJson(
+                "{\"response\":\"dispatch_cancel_pending\",\"transactionStatus\":\"InProcessing\"}",
+                PurchaseResponse.class);
+        assertEquals("InProcessing", response.getTransactionStatus());
+        assertEquals("InProcessing", WalletAddCostHttpRecreateHelper.switchableTransactionStatus(
+                response.getTransactionStatus()));
+    }
+
+    @Test
     public void purchaseResponse_rawWfpWithoutUid_doesNotApplyRecreate() {
         String json = "{"
                 + "\"orderReference\":\"V_20260711105346548_6PVL\","

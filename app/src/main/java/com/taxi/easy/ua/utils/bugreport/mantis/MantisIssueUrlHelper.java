@@ -4,6 +4,12 @@ import androidx.annotation.NonNull;
 
 public final class MantisIssueUrlHelper {
 
+    /** Заявка создаётся через API контейнера такси, не через адрес Mantis из Firestore. */
+    public static final String TAXI_CREATE_ISSUE_PATH = "api/mantis/issues";
+
+    /** Публичная страница заявки, если контейнер не вернул view_url. */
+    public static final String PUBLIC_ISSUE_UI = "https://t.easy-order-taxi.site/mantis";
+
     private static final int SUMMARY_MAX_LENGTH = 128;
 
     private MantisIssueUrlHelper() {
@@ -40,8 +46,13 @@ public final class MantisIssueUrlHelper {
         return normalized;
     }
 
+    /** База Retrofit: адрес сервера такси, который уже выбран в приложении. */
     @NonNull
-    public static String buildRetrofitBaseUrl(@NonNull String baseUrl) {
-        return normalizeBaseUrl(baseUrl) + "/api/rest/";
+    public static String buildTaxiBugReportBaseUrl(@NonNull String taxiBaseUrl) {
+        String normalized = normalizeBaseUrl(taxiBaseUrl);
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        return normalized + "/";
     }
 }
