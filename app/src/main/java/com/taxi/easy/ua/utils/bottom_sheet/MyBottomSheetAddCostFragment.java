@@ -36,6 +36,7 @@ import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.payment.AddCostHttpTimeouts;
 import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.payment.WalletAddCostHttpRecreateHelper;
@@ -61,7 +62,7 @@ import com.taxi.easy.ua.utils.db.CursorReadHelper;
 public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
     private static final String TAG = "MyBottomSheetAddCostFragment";
-    private static final int ADD_COST_WFP_TIMEOUT_SEC = 90;
+    private static final int ADD_COST_WFP_TIMEOUT_SEC = AddCostHttpTimeouts.WALLET_SECONDS;
     TextView textViewCost;
     AppCompatButton btn_ok, btn_minus, btn_plus;
     String cost, uid, uid_Double, pay_method;
@@ -206,9 +207,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             ExecutionStatusViewModel.setAddCostInFlightPref(true);
 
             OkHttpClient client = new OkHttpClient.Builder()
-                    .connectTimeout(20, TimeUnit.SECONDS)
-                    .readTimeout(20, TimeUnit.SECONDS)
-                    .writeTimeout(20, TimeUnit.SECONDS)
+                    .connectTimeout(AddCostHttpTimeouts.CASH_SECONDS, TimeUnit.SECONDS)
+                    .readTimeout(AddCostHttpTimeouts.CASH_SECONDS, TimeUnit.SECONDS)
+                    .writeTimeout(AddCostHttpTimeouts.CASH_SECONDS, TimeUnit.SECONDS)
                     .build();
 
             Retrofit retrofit = new Retrofit.Builder()
@@ -284,7 +285,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     Logger.e(context, TAG, "startAddCostWithUpdate failed: " + t.getMessage());
                     ExecutionStatusViewModel.setAddCostInFlightPref(false);
                     if (isAdded()) {
-                        Toast.makeText(context, R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                        Toast.makeText(context, R.string.add_cost_processing_slow, Toast.LENGTH_LONG).show();
                     }
                     viewModel.setCancelStatus(true);
                 }
