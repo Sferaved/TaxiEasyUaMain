@@ -1106,14 +1106,24 @@ public class FinishSeparateFragment extends Fragment {
 
     /** Шторка смены способа оплаты после подтверждённого Declined. */
     public void presentDeclinedUiOnFinish() {
-        if (!isAdded() || canceled || isViewingCompletedOrder()) {
+        presentDeclinedUiOnFinish(false);
+    }
+
+    /**
+     * @param afterCancel заказ уже снят из‑за неоплаты — шторку всё равно показать
+     */
+    private void presentDeclinedUiOnFinish(boolean afterCancel) {
+        if (!isAdded() || isViewingCompletedOrder()) {
             return;
         }
-        if (isPaymentVerified()) {
+        if (!afterCancel && canceled) {
+            return;
+        }
+        if (!afterCancel && isPaymentVerified()) {
             Logger.d(context, TAG, "presentDeclinedUiOnFinish: payment verified — skip");
             return;
         }
-        if (isOrderDispatched()) {
+        if (!afterCancel && isOrderDispatched()) {
             Logger.d(context, TAG, "presentDeclinedUiOnFinish: order dispatched — skip");
             clearDeclinedPaymentUi();
             return;
@@ -1143,7 +1153,7 @@ public class FinishSeparateFragment extends Fragment {
         PaymentDeclinedNotifier.prepareDeclinedOrderState();
         PaymentDeclinedNotifier.markSheetShown();
         PendingTransactionHelper.clear();
-        showPaymentErrorBottomSheet(null);
+        showPaymentErrorBottomSheet(null, afterCancel);
     }
 
     /** Карта есть в телефоне, но для мерчанта этого города токена нет. Банк не вызывали. */
@@ -1197,7 +1207,14 @@ public class FinishSeparateFragment extends Fragment {
             boolean pendingDeclined,
             boolean knownFailureAtCheck
     ) {
-        if (!isAdded() || canceled || isViewingCompletedOrder()) {
+        if (!isAdded() || isViewingCompletedOrder()) {
+            return;
+        }
+        if (canceled) {
+            if ("Declined".equals(transactionStatus) && isCardPayMethod()) {
+                lastKnownPaymentStatus = transactionStatus;
+                presentDeclinedUiOnFinish(true);
+            }
             return;
         }
         if (transactionStatus != null) {
@@ -1232,6 +1249,10 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void showPaymentErrorBottomSheet(@Nullable String message) {
+        showPaymentErrorBottomSheet(message, false);
+    }
+
+    private void showPaymentErrorBottomSheet(@Nullable String message, boolean afterCancel) {
         if (pendingPaymentErrorSheetShow != null) {
             View root = getView();
             if (root != null) {
@@ -1242,11 +1263,11 @@ public class FinishSeparateFragment extends Fragment {
         }
         pendingPaymentErrorSheetShow = () -> {
             pendingPaymentErrorSheetShow = null;
-            if (!isAdded() || canceled || getActivity() == null) {
+            if (!isAdded() || getActivity() == null || (!afterCancel && canceled)) {
                 PaymentErrorSheetHelper.releaseShowLock();
                 return;
             }
-            if (isPaymentVerified() || isOrderDispatched()) {
+            if (!afterCancel && (isPaymentVerified() || isOrderDispatched())) {
                 PaymentErrorSheetHelper.releaseShowLock();
                 clearDeclinedPaymentUi();
                 return;
@@ -2639,7 +2660,17 @@ public class FinishSeparateFragment extends Fragment {
      }
     private void orderCanceled(String message) {
             restoreOrderAgainButton();
-            PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
+            boolean revealPaymentFailure = isCardPayMethod() && hasDeclinedPaymentForActiveOrder();
+            if (revealPaymentFailure && context != null) {
+                String activeUid = resolveActiveOrderUid();
+                if (activeUid == null || activeUid.isEmpty()) {
+                    activeUid = uid;
+                }
+                message = PaymentDeclinedUiHelper.canceledStatusMessage(context, activeUid);
+            }
+            if (!revealPaymentFailure) {
+                PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
+            }
             sharedPreferencesHelperMain.saveValue("carFound", false);
             text_status.setText(R.string.recounting_order);
 
@@ -2692,7 +2723,33 @@ public class FinishSeparateFragment extends Fragment {
             if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
                 btn_again.setVisibility(View.VISIBLE);
             }
+            if (revealPaymentFailure) {
+                presentDeclinedUiOnFinish(true);
+            }
 //        });
+    }
+
+    /** Отказ банка по этому заказу: push/Centrifugo Declined или checkStatus. */
+    private boolean hasDeclinedPaymentForActiveOrder() {
+        if ("Declined".equals(lastKnownPaymentStatus)) {
+            return true;
+        }
+        if (viewModel != null && "Declined".equals(viewModel.getTransactionStatus().getValue())) {
+            return true;
+        }
+        if (PendingTransactionHelper.hasPendingDeclinedForActiveOrder()) {
+            return true;
+        }
+        String orderUid = resolveActiveOrderUid();
+        if (orderUid == null || orderUid.isEmpty()) {
+            orderUid = uid;
+        }
+        if (orderUid == null || orderUid.isEmpty()) {
+            return false;
+        }
+        String failedUid = String.valueOf(
+                sharedPreferencesHelperMain.getValue("payment_failed_order_uid", ""));
+        return orderUid.equals(failedUid);
     }
 
 
@@ -3640,8 +3697,20 @@ public class FinishSeparateFragment extends Fragment {
         }
         ExecutionStatusViewModel.markWalletAddCostApplied(resolveActiveOrderUid());
         ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
-        onInitialPaymentHoldVerified();
+        if (FinishCostReconcileHelper.statusCostConfirmsBankHold(
+                holdVerifiedOnEnter,
+                isApprovedPaymentStatus(lastKnownPaymentStatus))) {
+            onInitialPaymentHoldVerified();
+        } else {
+            suppressWalletSurchargePrompt();
+        }
         Logger.d(context, TAG, "onWalletAddCostConfirmedByServer: " + serverTotalGrivna);
+    }
+
+    /** Доплата уже в цене — не спрашивать +5. Холд банка этим не подтверждается. */
+    private void suppressWalletSurchargePrompt() {
+        need_20_add = false;
+        cancelShowDialogAddCost();
     }
 
     /** После пересоздания заказа status API отдаёт отрицательный add_cost (метаданные). */
@@ -4149,7 +4218,7 @@ public class FinishSeparateFragment extends Fragment {
                     Logger.d(context, TAG,
                             "verifyHold on enter: no active hold — wait for checkStatus (capture is OK)");
                     if (shouldSkipWalletAddCostPrompt()) {
-                        onInitialPaymentHoldVerified();
+                        suppressWalletSurchargePrompt();
                     }
                 }
             }
@@ -4371,7 +4440,13 @@ public class FinishSeparateFragment extends Fragment {
         }
         refreshPaymentStatusOnEnter();
         if (shouldSkipWalletAddCostPrompt()) {
-            onInitialPaymentHoldVerified();
+            if (FinishCostReconcileHelper.statusCostConfirmsBankHold(
+                    holdVerifiedOnEnter,
+                    isApprovedPaymentStatus(lastKnownPaymentStatus))) {
+                onInitialPaymentHoldVerified();
+            } else {
+                suppressWalletSurchargePrompt();
+            }
         }
         if (!canceled && !isOrderDispatched()) {
             isTaskCancelled = false;

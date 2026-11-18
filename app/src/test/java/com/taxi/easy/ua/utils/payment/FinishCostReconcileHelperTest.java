@@ -181,4 +181,11 @@ public class FinishCostReconcileHelperTest {
         assertTrue(FinishCostReconcileHelper.shouldSkipWalletCheckoutSurchargePrompt(
                 true, false, false, 16, 16));
     }
+
+    @Test
+    public void statusCostMatch_doesNotConfirmBankHold() {
+        assertFalse(FinishCostReconcileHelper.statusCostConfirmsBankHold(false, false));
+        assertTrue(FinishCostReconcileHelper.statusCostConfirmsBankHold(true, false));
+        assertTrue(FinishCostReconcileHelper.statusCostConfirmsBankHold(false, true));
+    }
 }

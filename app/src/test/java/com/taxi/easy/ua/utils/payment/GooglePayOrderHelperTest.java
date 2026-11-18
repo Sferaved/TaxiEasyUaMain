@@ -21,6 +21,16 @@ public class GooglePayOrderHelperTest {
     }
 
     @Test
+    public void shouldShowGooglePayProcessingScreen_hiddenForRegularCard() {
+        assertFalse(GooglePayOrderHelper.shouldShowGooglePayProcessingScreen("wfp_payment", false));
+        assertFalse(GooglePayOrderHelper.shouldShowGooglePayProcessingScreen("card_payment", false));
+        assertFalse(GooglePayOrderHelper.shouldShowGooglePayProcessingScreen("nal_payment", false));
+        assertFalse(GooglePayOrderHelper.shouldShowGooglePayProcessingScreen(null, false));
+        assertTrue(GooglePayOrderHelper.shouldShowGooglePayProcessingScreen("google_pay_payment", false));
+        assertTrue(GooglePayOrderHelper.shouldShowGooglePayProcessingScreen("wfp_payment", true));
+    }
+
+    @Test
     public void parseAmountUah_parsesIntegerAndDecimal() {
         assertEquals(120, GooglePayOrderHelper.parseAmountUah("120"));
         assertEquals(99, GooglePayOrderHelper.parseAmountUah("98.6"));

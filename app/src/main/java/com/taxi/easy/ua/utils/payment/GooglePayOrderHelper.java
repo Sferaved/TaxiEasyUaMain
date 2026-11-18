@@ -63,6 +63,18 @@ public final class GooglePayOrderHelper {
     private GooglePayOrderHelper() {
     }
 
+    /**
+     * Экран «Открываем Google Pay» только для Google Pay.
+     * Заказ обычной картой тоже идёт как отправка, но этот экран ему не нужен.
+     * Уже начатый холд Google Pay не прячем, даже если тип оплаты в базе успел смениться.
+     */
+    public static boolean shouldShowGooglePayProcessingScreen(
+            @Nullable String paymentType,
+            boolean googlePayHoldInProgress
+    ) {
+        return googlePayHoldInProgress || PaymentTypeHelper.isGooglePay(paymentType);
+    }
+
     public static boolean isHoldSuccess(@Nullable String transactionStatus) {
         return "Approved".equals(transactionStatus)
                 || "WaitingAuthComplete".equals(transactionStatus);

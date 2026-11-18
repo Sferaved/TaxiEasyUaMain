@@ -83,6 +83,17 @@ public final class FinishCostReconcileHelper {
         return walletFloorGrivna != null && walletFloorGrivna > 0 && serverTotal >= walletFloorGrivna;
     }
 
+    /**
+     * Совпадение order_cost с экраном не доказывает холд банка.
+     * Отказ WayForPay (Declined, нет денег) должен открыть шторку ошибки оплаты.
+     */
+    public static boolean statusCostConfirmsBankHold(
+            boolean bankHoldAlreadyVerified,
+            boolean wfpApprovedOrWaiting
+    ) {
+        return bankHoldAlreadyVerified || wfpApprovedOrWaiting;
+    }
+
     /** Не восстанавливать завышенную сумму после order_uid_new (12+5≠17). */
     public static int capInflatedWalletDisplay(int candidateGrivna, int authoritativeGrivna) {
         if (authoritativeGrivna <= 0) {

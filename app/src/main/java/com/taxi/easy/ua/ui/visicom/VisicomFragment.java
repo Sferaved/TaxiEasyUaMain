@@ -521,7 +521,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
             new Handler(Looper.getMainLooper()).post(
                     () -> EarlyOrderNavigationHelper.tryResumePendingFinishNavigation(context));
-        } else if (EarlyOrderNavigationHelper.isSubmitInProgress() || googlePayOrderHoldInProgress) {
+        } else if ((EarlyOrderNavigationHelper.isSubmitInProgress() || googlePayOrderHoldInProgress)
+                && GooglePayOrderHelper.shouldShowGooglePayProcessingScreen(
+                        currentPaymentType(), googlePayOrderHoldInProgress)) {
             new Handler(Looper.getMainLooper()).post(this::restoreGooglePayProcessingUiIfNeeded);
         }
 
@@ -3289,7 +3291,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
 
 
-        final boolean preserveGPaySubmit = (isGooglePaySubmitFrozen() || googlePayOrderProcessingUiShown)
+        final boolean preserveGPaySubmit = isOrderSubmitPreserved()
                 && !EarlyOrderNavigationHelper.isEarlyNavigationDone();
 
         if (!preserveGPaySubmit) {
@@ -3315,8 +3317,12 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
             EarlyOrderNavigationHelper.tryResumePendingFinishNavigation(context);
-        } else if (preserveGPaySubmit) {
+        } else if (preserveGPaySubmit
+                && GooglePayOrderHelper.shouldShowGooglePayProcessingScreen(
+                        currentPaymentType(), googlePayOrderHoldInProgress)) {
             restoreGooglePayProcessingUiIfNeeded();
+        } else if (preserveGPaySubmit) {
+            Logger.d(context, TAG, "onResume: preserve submit, skip Google Pay screen");
         } else {
             constraintLayoutVisicomMain.setVisibility(GONE);
 
@@ -5889,12 +5895,35 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     }
 
+    private boolean isOrderSubmitPreserved() {
+        return googlePayOrderHoldInProgress
+                || googlePayOrderProcessingUiShown
+                || EarlyOrderNavigationHelper.isSubmitInProgress();
+    }
+
     private boolean isGooglePaySubmitFrozen() {
-        return googlePayOrderHoldInProgress || EarlyOrderNavigationHelper.isSubmitInProgress();
+        return isOrderSubmitPreserved()
+                && GooglePayOrderHelper.shouldShowGooglePayProcessingScreen(
+                        currentPaymentType(), googlePayOrderHoldInProgress);
+    }
+
+    @Nullable
+    private String currentPaymentType() {
+        if (context != null) {
+            try {
+                List<String> settings = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+                if (settings.size() > 4 && settings.get(4) != null && !settings.get(4).isEmpty()) {
+                    return settings.get(4);
+                }
+            } catch (RuntimeException ignored) {
+                // тип оплаты остаётся из поля pay_method
+            }
+        }
+        return pay_method;
     }
 
     private void initAddCostOnCreateView() {
-        if (!isGooglePaySubmitFrozen()) {
+        if (!isOrderSubmitPreserved()) {
             addCost = 0;
             updateAddCost(String.valueOf(addCost), context);
             return;
@@ -6136,6 +6165,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     private void showGooglePayOrderProcessingUi(int statusMessageResId) {
         if (!isAdded() || getContext() == null) {
+            return;
+        }
+        if (!GooglePayOrderHelper.shouldShowGooglePayProcessingScreen(
+                currentPaymentType(), googlePayOrderHoldInProgress)) {
+            Logger.d(context, TAG, "showGooglePayOrderProcessingUi skipped: not Google Pay");
             return;
         }
         Context ctx = requireContext();
