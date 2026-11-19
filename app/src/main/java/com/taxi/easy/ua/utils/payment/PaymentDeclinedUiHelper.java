@@ -93,7 +93,9 @@ public final class PaymentDeclinedUiHelper {
         if (!PaymentErrorSheetHelper.beginShowAttempt()) {
             return;
         }
-        PaymentDeclinedNotifier.markSheetShown();
+        PaymentDeclinedNotifier.markSheetShownForOrder(orderUid);
+        PaymentDeclinedNotifier.markSheetShownForOrder(MainActivity.uid);
+        PaymentDeclinedNotifier.markSheetShownForOrder(MainActivity.uid_Double);
         PendingTransactionHelper.clear();
         showPaymentErrorSheet(activity, orderUid);
     }

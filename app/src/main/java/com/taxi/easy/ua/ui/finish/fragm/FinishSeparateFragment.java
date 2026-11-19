@@ -96,6 +96,7 @@ import com.taxi.easy.ua.utils.orders.OrderCancelResponseHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.payment.PaymentDeclinedNotifier;
+import com.taxi.easy.ua.utils.payment.PaymentErrorSheetRepeatPolicy;
 import com.taxi.easy.ua.utils.payment.PaymentDeclinedUiHelper;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
@@ -1110,7 +1111,7 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     /**
-     * @param afterCancel заказ уже снят из‑за неоплаты — шторку всё равно показать
+     * @param afterCancel заказ уже снят из‑за неоплаты. Повторять шторку не нужно, если она уже была.
      */
     private void presentDeclinedUiOnFinish(boolean afterCancel) {
         if (!isAdded() || isViewingCompletedOrder()) {
@@ -1143,6 +1144,11 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         String activeUid = resolveActiveOrderUid();
+        if (afterCancel && !PaymentErrorSheetRepeatPolicy.allowOnCancelScreen(sheetAlreadyShownForDecline(activeUid))) {
+            PaymentErrorSheetHelper.releaseShowLock();
+            Logger.d(context, TAG, "presentDeclinedUiOnFinish: sheet already shown, skip repeat");
+            return;
+        }
         PaymentSessionHelper.markPaymentFailedForOrder(activeUid);
         PaymentSessionHelper.saveCashReorderContext(activeUid, uid_Double);
         Logger.w(context, TAG,
@@ -1151,9 +1157,17 @@ public class FinishSeparateFragment extends Fragment {
                         + " uid_Double=" + uid_Double
                         + " amount=" + amount);
         PaymentDeclinedNotifier.prepareDeclinedOrderState();
-        PaymentDeclinedNotifier.markSheetShown();
+        PaymentDeclinedNotifier.markSheetShownForOrder(activeUid);
+        PaymentDeclinedNotifier.markSheetShownForOrder(uid);
+        PaymentDeclinedNotifier.markSheetShownForOrder(uid_Double);
         PendingTransactionHelper.clear();
         showPaymentErrorBottomSheet(null, afterCancel);
+    }
+
+    private boolean sheetAlreadyShownForDecline(@Nullable String activeUid) {
+        return PaymentDeclinedNotifier.wasSheetShownForOrder(activeUid)
+                || PaymentDeclinedNotifier.wasSheetShownForOrder(uid)
+                || PaymentDeclinedNotifier.wasSheetShownForOrder(uid_Double);
     }
 
     /** Карта есть в телефоне, но для мерчанта этого города токена нет. Банк не вызывали. */

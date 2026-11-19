@@ -54,6 +54,9 @@ public final class PaymentDeclinedNotifier {
 
     private static String lastSheetOrderRef = "";
 
+    /** Заказы, для которых шторка нехватки денег уже была показана в этой сессии. */
+    private static final java.util.Set<String> SHEET_SHOWN_ORDER_UIDS = new java.util.HashSet<>();
+
 
 
     private PaymentDeclinedNotifier() {
@@ -156,11 +159,32 @@ public final class PaymentDeclinedNotifier {
 
     }
 
+    /** Запомнить заказ, для которого шторка уже показана — на экране отмены её не повторять. */
+    public static void markSheetShownForOrder(@Nullable String orderUid) {
+
+        markSheetShown();
+
+        if (orderUid != null && !orderUid.isEmpty()) {
+
+            SHEET_SHOWN_ORDER_UIDS.add(orderUid);
+
+        }
+
+    }
+
+    public static boolean wasSheetShownForOrder(@Nullable String orderUid) {
+
+        return orderUid != null && !orderUid.isEmpty() && SHEET_SHOWN_ORDER_UIDS.contains(orderUid);
+
+    }
+
     public static void clearSheetDebounce() {
 
         lastSheetShownMs = 0L;
 
         lastSheetOrderRef = "";
+
+        SHEET_SHOWN_ORDER_UIDS.clear();
 
     }
 
@@ -203,6 +227,8 @@ public final class PaymentDeclinedNotifier {
         lastSheetOrderRef = "";
 
         lastSheetShownMs = 0L;
+
+        SHEET_SHOWN_ORDER_UIDS.clear();
 
     }
 
