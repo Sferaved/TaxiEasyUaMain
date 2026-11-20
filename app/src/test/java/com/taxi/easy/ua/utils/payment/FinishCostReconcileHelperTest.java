@@ -137,6 +137,21 @@ public class FinishCostReconcileHelperTest {
     }
 
     @Test
+    public void finishAbsoluteCost_ignoresSumFromPreviousOrder() {
+        // Mantis #115/#116: sticky 52 грн must not replace 6 or 47 on the new order.
+        assertFalse(FinishCostReconcileHelper.isFinishAbsoluteCostForCurrentOrder(
+                null, "new-order", "new-order"));
+        assertFalse(FinishCostReconcileHelper.isFinishAbsoluteCostForCurrentOrder(
+                "", "new-order", "new-order"));
+        assertFalse(FinishCostReconcileHelper.isFinishAbsoluteCostForCurrentOrder(
+                "old-order", "new-order", "new-order"));
+        assertTrue(FinishCostReconcileHelper.isFinishAbsoluteCostForCurrentOrder(
+                "new-order", "new-order", "old-order"));
+        assertTrue(FinishCostReconcileHelper.isFinishAbsoluteCostForCurrentOrder(
+                "new-order", "old-screen", "new-order"));
+    }
+
+    @Test
     public void keepDisplayed_nalDuringAddCostSheet() {
         assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
                 17, 7, false, false, true, null, false));

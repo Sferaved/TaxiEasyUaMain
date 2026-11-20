@@ -3343,6 +3343,14 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
             String currentUid = resolveActiveOrderUid();
+            String liveUid = viewModel.getUid().getValue();
+            if (!FinishCostReconcileHelper.isFinishAbsoluteCostForCurrentOrder(
+                    viewModel.getFinishAbsoluteCostOrderUid(), currentUid, liveUid)) {
+                Logger.d(context, TAG, "finishAbsoluteCost observe: ignore stale " + absoluteCost
+                        + " costUid=" + viewModel.getFinishAbsoluteCostOrderUid()
+                        + " screen=" + currentUid + " live=" + liveUid);
+                return;
+            }
             if (!FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
                     PaymentTypeHelper.usesWalletHold(pay_method),
                     currentUid,
@@ -3361,8 +3369,10 @@ public class FinishSeparateFragment extends Fragment {
             if (appliedUid == null || appliedUid.isEmpty()) {
                 appliedUid = resolveActiveOrderUid();
             }
-            ExecutionStatusViewModel.markWalletAddCostApplied(appliedUid);
-            ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
+            if (PaymentTypeHelper.usesWalletHold(pay_method)) {
+                ExecutionStatusViewModel.markWalletAddCostApplied(appliedUid);
+                ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
+            }
             ExecutionStatusViewModel.setAddCostInFlightPref(false);
             ExecutionStatusViewModel.clearPendingAddCostAmountPref();
             pendingAddCost = "0";

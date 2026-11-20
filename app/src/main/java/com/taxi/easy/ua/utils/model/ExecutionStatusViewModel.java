@@ -82,25 +82,47 @@ public class ExecutionStatusViewModel extends ViewModel {
     public LiveData<String> getAddCostViewUpdate() {return addCostViewUpdate;}
 
     private final MutableLiveData<String> finishAbsoluteCostGrivna = new MutableLiveData<>();
+    /** Заказ, для которого записана {@link #finishAbsoluteCostGrivna}. Чужой uid на экран не ставим. */
+    @Nullable
+    private String finishAbsoluteCostOrderUid;
 
     public LiveData<String> getFinishAbsoluteCostGrivna() {
         return finishAbsoluteCostGrivna;
+    }
+
+    @Nullable
+    public String getFinishAbsoluteCostOrderUid() {
+        return finishAbsoluteCostOrderUid;
     }
 
     public void setFinishAbsoluteCostGrivna(@Nullable String costGrivna) {
         if (costGrivna == null || costGrivna.isEmpty()) {
             return;
         }
-        Log.d("VIEWMODEL", "setFinishAbsoluteCostGrivna: " + costGrivna);
+        finishAbsoluteCostOrderUid = MainActivity.uid;
+        Log.d("VIEWMODEL", "setFinishAbsoluteCostGrivna: " + costGrivna
+                + " uid=" + finishAbsoluteCostOrderUid);
         finishAbsoluteCostGrivna.postValue(costGrivna);
     }
 
     public void clearFinishAbsoluteCostGrivna() {
+        finishAbsoluteCostOrderUid = null;
         if (Looper.getMainLooper().isCurrentThread()) {
             finishAbsoluteCostGrivna.setValue(null);
         } else {
             finishAbsoluteCostGrivna.postValue(null);
         }
+    }
+
+    /** Убрать сумму другого заказа. Сумму, только что записанную для {@code orderUid}, оставить. */
+    public void clearFinishAbsoluteCostIfNotFor(@Nullable String orderUid) {
+        if (orderUid != null && !orderUid.isEmpty() && orderUid.equals(finishAbsoluteCostOrderUid)) {
+            return;
+        }
+        if (finishAbsoluteCostOrderUid == null && finishAbsoluteCostGrivna.getValue() == null) {
+            return;
+        }
+        clearFinishAbsoluteCostGrivna();
     }
 
     // ✅ ИЗМЕНЕННЫЙ МЕТОД
@@ -299,10 +321,8 @@ public class ExecutionStatusViewModel extends ViewModel {
             clearWalletAddCostAppliedUid();
             clearWalletAddCostFloorGrivna();
         }
-        if (uidChanged || (persistedActive == null || persistedActive.isEmpty())) {
-            if (MainActivity.viewModel != null) {
-                MainActivity.viewModel.clearFinishAbsoluteCostGrivna();
-            }
+        if (MainActivity.viewModel != null) {
+            MainActivity.viewModel.clearFinishAbsoluteCostIfNotFor(activeOrderUid);
         }
         if (activeOrderUid != null && !activeOrderUid.isEmpty()) {
             MainActivity.uid = activeOrderUid;

@@ -444,6 +444,19 @@ public class CentrifugoManager {
                                     && FinishCostReconcileHelper
                                     .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(
                                             walletHold, addCostInFlight, pendingAddCost);
+                            String previousUid = MainActivity.uid;
+                            boolean replacingOrder = previousUid != null && !previousUid.isEmpty()
+                                    && !previousUid.equals(orderUid);
+                            if (replacingOrder) {
+                                String partner = ForkCancelTarget.resolveDoubleUid(
+                                        MainActivity.uid_Double,
+                                        ExecutionStatusViewModel.getPersistedDoubleUid());
+                                if (!ForkCancelTarget.isForkPartnerStatusUid(
+                                        previousUid, partner, orderUid)) {
+                                    viewModel.clearFinishAbsoluteCostGrivna();
+                                    ExecutionStatusViewModel.clearWalletAddCostAppliedUid();
+                                }
+                            }
                             boolean clearAddCostGate = treatAsSurchargeComplete
                                     && walletHold
                                     && (addCostInFlight
@@ -464,8 +477,11 @@ public class CentrifugoManager {
                             viewModel.updateUid(orderUid);
                             viewModel.updatePaySystemStatus(paySystemStatus);
                             if (treatAsSurchargeComplete) {
-                                // mark до setFinishAbsolute: observer проверяет flag по текущему uid
-                                ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
+                                // mark до setFinishAbsolute: observer проверяет flag по текущему uid.
+                                // Для готівки прапор не ставимо — інакше статус не може знизити чужу суму.
+                                if (walletHold) {
+                                    ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
+                                }
                                 viewModel.setFinishAbsoluteCostGrivna(orderCost);
                                 // Всегда снимаем gate и возобновляем опрос — даже если inFlight
                                 // уже сброшен HTTP-путём (Mantis #31).

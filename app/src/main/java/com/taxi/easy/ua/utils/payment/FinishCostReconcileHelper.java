@@ -103,6 +103,25 @@ public final class FinishCostReconcileHelper {
     }
 
     /**
+     * LiveData {@code finishAbsoluteCostGrivna} повторно отдаёт последнее значение.
+     * Сумма прошлого заказа не должна заменять сумму нового (Mantis #115: 6→52, #116: 47→52).
+     * Совпадает с uid на экране или с uid, который только что записал ViewModel (доплата).
+     */
+    public static boolean isFinishAbsoluteCostForCurrentOrder(
+            @Nullable String costOrderUid,
+            @Nullable String screenOrderUid,
+            @Nullable String liveOrderUid
+    ) {
+        if (costOrderUid == null || costOrderUid.isEmpty()) {
+            return false;
+        }
+        if (screenOrderUid != null && costOrderUid.equals(screenOrderUid)) {
+            return true;
+        }
+        return liveOrderUid != null && costOrderUid.equals(liveOrderUid);
+    }
+
+    /**
      * Observer {@code finishAbsoluteCostGrivna}: wallet-hold ждёт подтверждения по uid
      * или активного сценария доплаты (иначе гонка mark/set — Mantis #30);
      * готівка применяет итог сразу из HTTP-ответа пересоздания заказа.
