@@ -117,6 +117,7 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
 import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
+import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -3291,12 +3292,42 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
 
 
-        final boolean preserveGPaySubmit = isOrderSubmitPreserved()
+        // Mantis #120: Declined в фоне при submitInProgress — не замораживать карту «preserve submit».
+        final boolean declinedDuringSubmit = PendingTransactionHelper.hasPendingDeclined()
+                && isOrderSubmitPreserved();
+        if (declinedDuringSubmit) {
+            Logger.d(context, TAG,
+                    "onResume: pending Declined during submit — clear freeze (Mantis #120)");
+            googlePayOrderHoldInProgress = false;
+            cancelGooglePayHoldPoll();
+            clearFrozenGooglePaySubmitCost();
+            pendingOrderDisplayCost = null;
+            pendingGooglePayOrderReference = null;
+            EarlyOrderNavigationHelper.clearSubmitState();
+            restoreVisicomMainAfterGooglePayFailure();
+            googlePayOrderProcessingUiShown = false;
+            if (progressBar != null) {
+                progressBar.setVisibility(GONE);
+            }
+            if (constraintLayoutVisicomFinish != null) {
+                constraintLayoutVisicomFinish.setVisibility(GONE);
+            }
+            if (constraintLayoutVisicomMain != null) {
+                constraintLayoutVisicomMain.setVisibility(VISIBLE);
+            }
+            btnVisible(VISIBLE);
+            PendingTransactionHelper.consumePendingDeclined(requireContext(), null);
+        }
+
+        final boolean preserveGPaySubmit = !declinedDuringSubmit
+                && isOrderSubmitPreserved()
                 && !EarlyOrderNavigationHelper.isEarlyNavigationDone();
 
         if (!preserveGPaySubmit) {
             VisicomFragment.sendUrlMap = null;
-            MainActivity.uid = null;
+            if (!declinedDuringSubmit) {
+                MainActivity.uid = null;
+            }
             EarlyOrderNavigationHelper.clearSubmitState();
             Logger.d(context, "MainActivity.uid", "MainActivity.uid 2 " + MainActivity.uid);
         } else {
@@ -3305,7 +3336,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
-        viewModel.setTransactionStatus(null);
+        if (!declinedDuringSubmit && !PendingTransactionHelper.hasPendingDeclined()) {
+            viewModel.setTransactionStatus(null);
+        }
         viewModel.setCanceledStatus("no_canceled");
 
         textfrom = binding.textfrom;
@@ -3315,7 +3348,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         btnOrder = binding.btnOrder;
         textViewTo = binding.textTo;
 
-        if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
+        if (declinedDuringSubmit) {
+            Logger.d(context, TAG, "onResume: Declined handled after background — stay on map");
+        } else if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
             EarlyOrderNavigationHelper.tryResumePendingFinishNavigation(context);
         } else if (preserveGPaySubmit
                 && GooglePayOrderHelper.shouldShowGooglePayProcessingScreen(

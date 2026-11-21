@@ -3389,9 +3389,15 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
             btn_cancel_order.setEnabled(status);
+            long previousRecoveryUntilMs = addCostRecoveryUntilMs;
+            addCostRecoveryUntilMs = OrderHistoryStatusHelper.nextAddCostRecoveryUntilMs(
+                    status,
+                    ExecutionStatusViewModel.isAddCostInFlightPref(),
+                    System.currentTimeMillis(),
+                    ADD_COST_RECOVERY_WINDOW_MS,
+                    addCostRecoveryUntilMs);
             if (!status) {
                 if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
-                    addCostRecoveryUntilMs = System.currentTimeMillis() + ADD_COST_RECOVERY_WINDOW_MS;
                     showAddCostProcessingNotice();
                     scheduleAddCostProcessingNotices();
                 } else {
@@ -3402,7 +3408,11 @@ public class FinishSeparateFragment extends Fragment {
             } else {
                 onAddCostProcessingFinished();
                 resumeStatusPolling();
-                if (addCostRecoveryUntilMs > 0) {
+                // Mantis #119: после доплаты GPay recovery-окно глушило UI статуса,
+                // пока пользователь не уйдёт и не вернётся на экран.
+                if (previousRecoveryUntilMs > 0) {
+                    Logger.d(context, TAG,
+                            "cancel re-enabled: cleared add-cost recovery gate, refreshing status");
                     try {
                         statusOrder();
                     } catch (ParseException e) {
@@ -4443,18 +4453,44 @@ public class FinishSeparateFragment extends Fragment {
             if (isViewingCompletedOrder()) {
                 Logger.d(context, TAG, "onResume: archived completed order — read-only");
                 applyArchivedCompletedOrderUi();
-            } else if (OrderCancelResponseHelper.shouldResumeCancelStatusWatch(
+                btn_open.setOnClickListener(v -> btnOpen());
+                return;
+            }
+            if (OrderCancelResponseHelper.shouldResumeCancelStatusWatch(
                     isCancelUiShown(),
                     ExecutionStatusViewModel.isCancelAwaitingOperatorPref(),
                     cancelFailureWatchRemaining != 0)) {
                 Logger.d(context, TAG, "onResume: resume cancel status watch");
                 resumeOperatorCancelWatch();
-            } else {
+                btn_open.setOnClickListener(v -> btnOpen());
+                return;
+            }
+            if (OrderHistoryStatusHelper.shouldAbortResumeStatusPolling(
+                    canceled,
+                    cancelRequestInFlight,
+                    cancelFailureWatchRemaining != 0,
+                    ExecutionStatusViewModel.isCancelInFlightPref(),
+                    false)) {
                 Logger.d(context, TAG, "onResume: skip polling — cancel UI active");
                 restoreOrderAgainButton();
+                btn_open.setOnClickListener(v -> btnOpen());
+                return;
             }
-            btn_open.setOnClickListener(v -> btnOpen());
-            return;
+            // Mantis #120: только add-cost / recovery — не оставляем экран без опроса после фона.
+            Boolean cancelEnabled = viewModel != null ? viewModel.getCancelStatus().getValue() : null;
+            if (Boolean.TRUE.equals(cancelEnabled)
+                    || System.currentTimeMillis() >= addCostRecoveryUntilMs) {
+                Logger.d(context, TAG,
+                        "onResume: clear stale add-cost gate before status poll restart");
+                addCostRecoveryUntilMs = 0;
+                if (Boolean.TRUE.equals(cancelEnabled)) {
+                    ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                    ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                }
+            } else {
+                Logger.d(context, TAG,
+                        "onResume: add-cost gate active — still restart status poll");
+            }
         }
         isTaskRunning = false;
         statusPollPaused = false;
@@ -4866,6 +4902,9 @@ public class FinishSeparateFragment extends Fragment {
                                     "Google Pay add-cost hold ok: keep cancel enabled (fork already live)");
                             ExecutionStatusViewModel.setAddCostInFlightPref(false);
                             ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                            // Сбросить gate до setCancelStatus(true), иначе statusOrder
+                            // ещё раз проигнорирует ответ (Mantis #119).
+                            addCostRecoveryUntilMs = 0;
                             viewModel.setCancelStatus(true);
                             enableCancelAfterAddCostIfReady();
                             return;

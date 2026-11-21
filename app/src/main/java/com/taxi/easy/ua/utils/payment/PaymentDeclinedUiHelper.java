@@ -21,6 +21,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,6 +105,10 @@ public final class PaymentDeclinedUiHelper {
     public static boolean isRelevantOrderUid(@Nullable String eventUid) {
         if (TextUtils.isEmpty(eventUid)) {
             return false;
+        }
+        // Пока ждём order_uid_new / ранний переход — любой Declined текущей отправки наш.
+        if (EarlyOrderNavigationHelper.isSubmitInProgress()) {
+            return true;
         }
         if (eventUid.equals(MainActivity.uid)) {
             return true;

@@ -190,4 +190,43 @@ public final class OrderHistoryStatusHelper {
     ) {
         return addCostInFlight || System.currentTimeMillis() < addCostRecoveryUntilMs;
     }
+
+    /**
+     * Окно recovery глушит опрос статуса на экране заказа.
+     * При повторном включении отмены (новая вилка уже жива) окно нужно сбросить —
+     * иначе «Скасування тимчасово недоступне» висит до истечения окна (Mantis #119).
+     */
+    public static long nextAddCostRecoveryUntilMs(
+            boolean cancelEnabled,
+            boolean addCostInFlight,
+            long nowMs,
+            long windowMs,
+            long previousUntilMs
+    ) {
+        if (cancelEnabled) {
+            return 0L;
+        }
+        if (addCostInFlight) {
+            return nowMs + Math.max(0L, windowMs);
+        }
+        return previousUntilMs;
+    }
+
+    /**
+     * onResume не должен полностью пропускать restart опроса из‑за одного add-cost gate
+     * (Mantis #120). Блокируем только финальную отмену / cancel-in-flight / архив.
+     */
+    public static boolean shouldAbortResumeStatusPolling(
+            boolean canceled,
+            boolean cancelRequestInFlight,
+            boolean cancelFailureWatchActive,
+            boolean cancelInFlightPref,
+            boolean viewingCompletedOrder
+    ) {
+        return viewingCompletedOrder
+                || canceled
+                || cancelRequestInFlight
+                || cancelFailureWatchActive
+                || cancelInFlightPref;
+    }
 }

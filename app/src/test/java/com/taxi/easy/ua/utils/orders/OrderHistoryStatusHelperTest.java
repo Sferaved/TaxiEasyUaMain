@@ -101,6 +101,44 @@ public class OrderHistoryStatusHelperTest {
     }
 
     @Test
+    public void nextAddCostRecoveryUntilMs_clearsWindowWhenCancelReEnabled() {
+        long now = 1_000_000L;
+        long window = 120_000L;
+        long previous = now + window;
+        assertEquals(0L, OrderHistoryStatusHelper.nextAddCostRecoveryUntilMs(
+                true, false, now, window, previous));
+        assertEquals(0L, OrderHistoryStatusHelper.nextAddCostRecoveryUntilMs(
+                true, true, now, window, previous));
+    }
+
+    @Test
+    public void nextAddCostRecoveryUntilMs_opensWindowWhenCancelDisabledDuringAddCost() {
+        long now = 1_000_000L;
+        long window = 120_000L;
+        assertEquals(now + window, OrderHistoryStatusHelper.nextAddCostRecoveryUntilMs(
+                false, true, now, window, 0L));
+        assertEquals(55L, OrderHistoryStatusHelper.nextAddCostRecoveryUntilMs(
+                false, false, now, window, 55L));
+    }
+
+    @Test
+    public void shouldAbortResumeStatusPolling_blocksOnlyCancelOrArchive() {
+        assertTrue(OrderHistoryStatusHelper.shouldAbortResumeStatusPolling(
+                true, false, false, false, false));
+        assertTrue(OrderHistoryStatusHelper.shouldAbortResumeStatusPolling(
+                false, true, false, false, false));
+        assertTrue(OrderHistoryStatusHelper.shouldAbortResumeStatusPolling(
+                false, false, true, false, false));
+        assertTrue(OrderHistoryStatusHelper.shouldAbortResumeStatusPolling(
+                false, false, false, true, false));
+        assertTrue(OrderHistoryStatusHelper.shouldAbortResumeStatusPolling(
+                false, false, false, false, true));
+        // add-cost / recovery alone — onResume must restart polling (Mantis #120)
+        assertFalse(OrderHistoryStatusHelper.shouldAbortResumeStatusPolling(
+                false, false, false, false, false));
+    }
+
+    @Test
     public void isScheduledBooking_rejectsEpochPlaceholder() {
         assertFalse(OrderHistoryStatusHelper.isScheduledBooking("01.01.1970 03:00:00"));
         assertTrue(OrderHistoryStatusHelper.isScheduledBooking("07.07.2026 21:47"));
