@@ -147,6 +147,7 @@ import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
+import com.taxi.easy.ua.utils.ui.VisicomOrderUiHelper;
 import com.taxi.easy.ua.utils.inclusive.InclusiveTransportPromptCoordinator;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
@@ -991,6 +992,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             if (!CostCalculationProgressBar.isCalculationInProgress()) {
                 showRetryMode();
             }
+            // Mantis #121: retry/hide кнопок заказа не должен оставлять Звідки/Куди invisible.
+            ensureAddressFieldsVisible();
         } else if (visible == VISIBLE) {
             showNormalMode();
         }
@@ -1065,14 +1068,19 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
         binding.btnReset.setVisibility(GONE);
         binding.btnReport.setVisibility(GONE);
+        ensureAddressFieldsVisible();
+    }
+
+    /** Поля маршрута всегда на экране заказа (даже в retry / без кнопок цены). */
+    private void ensureAddressFieldsVisible() {
+        if (binding == null) {
+            return;
+        }
         setViewsVisibility(VISIBLE,
                 binding.textfrom, binding.num1, binding.clearButtonFrom,
                 binding.textGeo, binding.textwhere, binding.num2,
                 binding.textTo, binding.clearButtonTo
-                // binding.gpsbut - удаляем отсюда
         );
-
-
     }
 
     private void setViewsVisibility(int visibility, View... views) {
@@ -3359,31 +3367,29 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         } else if (preserveGPaySubmit) {
             Logger.d(context, TAG, "onResume: preserve submit, skip Google Pay screen");
         } else {
-            constraintLayoutVisicomMain.setVisibility(GONE);
+            constraintLayoutVisicomMain.setVisibility(VISIBLE);
+            constraintLayoutVisicomFinish.setVisibility(GONE);
+            // Mantis #121: сначала вернуть Звідки/Куди, потом решить про кнопки заказа.
+            ensureAddressFieldsVisible();
 
             String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
             Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
             progressBar.setVisibility(GONE);
-            if (cityCheckActivity.equals("run")) {
-                btnVisible(VISIBLE);
-            }
 
             String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
-            if(visible_shed.equals("no")) {
-                Logger.d(context, TAG, "onResume 2" );
-                btnVisible(GONE);
-            } else  {
-                if (NetworkUtils.isNetworkAvailable(context)) {
-                    Logger.d(context, TAG, "onResume 3" );
-                    btnVisible(VISIBLE);
-                } else {
-                    Logger.d(context, TAG, "onResume 4" );
-                    btnVisible(GONE);
+            boolean networkOk = NetworkUtils.isNetworkAvailable(context);
+            boolean showActions = VisicomOrderUiHelper.shouldShowOrderActionButtons(visible_shed, networkOk)
+                    || "run".equals(cityCheckActivity);
+            if (showActions && networkOk) {
+                Logger.d(context, TAG, "onResume: show order actions");
+                if ("no".equals(visible_shed)) {
+                    sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
                 }
+                btnVisible(VISIBLE);
+            } else {
+                Logger.d(context, TAG, "onResume: hide order actions, keep address fields");
+                btnVisible(GONE);
             }
-            Logger.d(context, TAG, "onResume 5" );
-            constraintLayoutVisicomMain.setVisibility(VISIBLE);
-            constraintLayoutVisicomFinish.setVisibility(GONE);
         }
 
         databaseHelper = new DatabaseHelper(context);
