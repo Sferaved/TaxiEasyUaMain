@@ -15,6 +15,14 @@ public class GooglePayOrderHelperTest {
     }
 
     @Test
+    public void shouldKeepCancelEnabledAfterAddCostHold_whenNewForkAlreadyConfirmed() {
+        assertTrue(GooglePayOrderHelper.shouldKeepCancelEnabledAfterAddCostHold(true, true));
+        assertTrue(GooglePayOrderHelper.shouldKeepCancelEnabledAfterAddCostHold(true, false));
+        assertTrue(GooglePayOrderHelper.shouldKeepCancelEnabledAfterAddCostHold(false, false));
+        assertFalse(GooglePayOrderHelper.shouldKeepCancelEnabledAfterAddCostHold(false, true));
+    }
+
+    @Test
     public void isHoldSuccess_rejectsDeclinedAndEmpty() {
         assertFalse(GooglePayOrderHelper.isHoldSuccess("Declined"));
         assertFalse(GooglePayOrderHelper.isHoldSuccess(""));

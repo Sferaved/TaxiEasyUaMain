@@ -80,6 +80,17 @@ public final class GooglePayOrderHelper {
                 || "WaitingAuthComplete".equals(transactionStatus);
     }
 
+    /**
+     * После hold доплаты GPay: если бэкенд уже отдал новую вилку / сумму
+     * ({@code order_uid_new} / absolute cost), не блокировать отмену снова.
+     */
+    public static boolean shouldKeepCancelEnabledAfterAddCostHold(
+            boolean serverAlreadyConfirmedNewOrder,
+            boolean addCostStillInFlight
+    ) {
+        return serverAlreadyConfirmedNewOrder || !addCostStillInFlight;
+    }
+
     public static boolean isChargeServerError(@Nullable String failureCode) {
         return failureCode != null && failureCode.startsWith("charge_http_5");
     }

@@ -4850,12 +4850,26 @@ public class FinishSeparateFragment extends Fragment {
                         MainActivity.order_id = orderReference;
                         Logger.d(context, TAG, "Google Pay add-cost hold ok: " + orderReference
                                 + " amount=" + amountUah);
+                        // Считать «уже подтверждено» до markWallet — иначе флаг всегда true.
+                        boolean keepCancelEnabled = GooglePayOrderHelper
+                                .shouldKeepCancelEnabledAfterAddCostHold(
+                                        isGooglePayAddCostAlreadyConfirmed(),
+                                        ExecutionStatusViewModel.isAddCostInFlightPref());
                         applyWalletAddCostOptimisticTotal(amountUah);
                         ExecutionStatusViewModel.markWalletAddCostApplied(
                                 viewModel.getUid().getValue() != null
                                         ? viewModel.getUid().getValue()
                                         : resolveActiveOrderUid());
                         clearGooglePayAddCostAwaiting();
+                        if (keepCancelEnabled) {
+                            Logger.d(context, TAG,
+                                    "Google Pay add-cost hold ok: keep cancel enabled (fork already live)");
+                            ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                            ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                            viewModel.setCancelStatus(true);
+                            enableCancelAfterAddCostIfReady();
+                            return;
+                        }
                         viewModel.setCancelStatus(false);
                         Toast.makeText(context, R.string.add_cost_processing, Toast.LENGTH_LONG).show();
                         enableCancelAfterAddCostIfReady();
