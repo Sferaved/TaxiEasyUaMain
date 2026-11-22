@@ -111,6 +111,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.bugreport.BugReportHelper;
+import com.taxi.easy.ua.utils.bugreport.BugReportHostResolver;
 import com.taxi.easy.ua.utils.city.CityChangeDeclineUiHelper;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
@@ -1034,8 +1035,18 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         binding.btnReset.setVisibility(VISIBLE);
         binding.btnReport.setVisibility(VISIBLE);
         binding.btnReport.setOnClickListener(v -> {
-            BugReportHelper bugReportHelper = new BugReportHelper((MainActivity) getCurrentActivity());
-            bugReportHelper.showBugReportManager();
+            // Mantis #125: MyApplication.getCurrentActivity() can be null after recreate;
+            // prefer the click view context / fragment host.
+            MainActivity host = BugReportHostResolver.resolve(
+                    v.getContext(),
+                    getActivity(),
+                    MainActivity.class
+            );
+            if (host == null) {
+                Logger.e(context, "BTN_VISIBLE", "Bug report: no live MainActivity");
+                return;
+            }
+            new BugReportHelper(host).showBugReportManager();
             progressBar.setVisibility(INVISIBLE);
         });
 
@@ -1576,8 +1587,16 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         if (btnReport != null) {
             btnReport.setOnClickListener(v -> {
-                BugReportHelper bugReportHelper = new BugReportHelper((MainActivity) activity);
-                bugReportHelper.showBugReportManager();
+                MainActivity host = BugReportHostResolver.resolve(
+                        v.getContext(),
+                        MyApplication.getCurrentActivity(),
+                        MainActivity.class
+                );
+                if (host == null) {
+                    Logger.e(null, "btnStaticVisible", "Bug report: no live MainActivity");
+                    return;
+                }
+                new BugReportHelper(host).showBugReportManager();
                 if (progressBar != null) progressBar.setVisibility(INVISIBLE);
             });
         }

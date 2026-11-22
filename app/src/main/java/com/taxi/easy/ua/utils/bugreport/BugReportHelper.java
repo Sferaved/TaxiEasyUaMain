@@ -54,7 +54,14 @@ public class BugReportHelper {
     }
 
     public void showBugReportManager() {
-        // Сразу показываем диалог ввода описания ошибки
+        if (mainActivity == null || mainActivity.isFinishing()) {
+            Logger.e(context, TAG, "showBugReportManager: activity unavailable");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && mainActivity.isDestroyed()) {
+            Logger.e(context, TAG, "showBugReportManager: activity destroyed");
+            return;
+        }
         showDescriptionDialog();
     }
 
@@ -205,6 +212,10 @@ public class BugReportHelper {
      * Диалог ввода описания проблемы (без промежуточного экрана)
      */
     private void showDescriptionDialog() {
+        if (context == null) {
+            Logger.e(null, TAG, "showDescriptionDialog: context is null");
+            return;
+        }
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_bug_description, null);
 
         EditText etDescription = view.findViewById(R.id.etDescription);

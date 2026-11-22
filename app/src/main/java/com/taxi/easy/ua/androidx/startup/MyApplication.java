@@ -198,6 +198,8 @@ public class MyApplication extends MultiDexApplication {
 
             @Override
             public void onActivityResumed(@NonNull Activity activity) {
+                // Keep pointer fresh after recreate (locale / config); Mantis #125.
+                currentActivity = activity;
                 if (idleTimeoutManager != null) {
                     idleTimeoutManager.resetTimer();
                 }
