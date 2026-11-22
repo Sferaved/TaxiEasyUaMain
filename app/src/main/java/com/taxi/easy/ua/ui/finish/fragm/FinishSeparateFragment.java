@@ -69,6 +69,7 @@ import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.BonusResponse;
 import com.taxi.easy.ua.ui.finish.FinishCostResponse;
+import com.taxi.easy.ua.ui.finish.FinishStatusCallbackGuard;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
@@ -235,6 +236,9 @@ public class FinishSeparateFragment extends Fragment {
     private Observer<Boolean> observer;
     private WeakReference<Activity> activityRef;
     private Call<OrderResponse> retrofitCall;
+    /** Статус наличного заказа. Не отменялся при уходе с экрана — поздний ответ ронял FragmentManager. */
+    @Nullable
+    private Call<OrderResponse> cashStatusCall;
     private Call<StatusResponse> wfpStatusCheckCall;
     private Call<HoldResponse> holdVerifyCall;
     private int holdCheckGeneration;
@@ -1189,6 +1193,9 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void clearDeclinedPaymentUi() {
+        if (!isAdded()) {
+            return;
+        }
         PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
         PaymentSessionHelper.clearPaymentFailedForOrder(resolveActiveOrderUid());
         PendingTransactionHelper.clear();
@@ -1434,6 +1441,12 @@ public class FinishSeparateFragment extends Fragment {
         HandlerCompat.postDelayed(handlerStatus, cancelWatchPoll, null, CANCEL_WATCH_POLL_MS);
     }
 
+    private void cancelCashStatusCall() {
+        if (cashStatusCall != null && !cashStatusCall.isCanceled()) {
+            cashStatusCall.cancel();
+        }
+    }
+
     private void stopCycle() {
         isTaskCancelled = true;
         statusPollPaused = false;
@@ -1512,6 +1525,7 @@ public class FinishSeparateFragment extends Fragment {
         if (notifier != null) {
             notifier.cancelPendingWeatherRequests();
         }
+        cancelCashStatusCall();
     }
 
     @Override
@@ -2027,13 +2041,17 @@ public class FinishSeparateFragment extends Fragment {
             baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
             String url = baseUrl  + api + "/android/historyUIDStatusNew/" + value + "/" + city  + "/" +  context.getString(R.string.application);
 
-            Call<OrderResponse> call = ApiClient.getApiService().statusOrder(url);
+            cancelCashStatusCall();
+            cashStatusCall = ApiClient.getApiService().statusOrder(url);
             Logger.d(context, TAG, "/android/historyUIDStatusNew/: " + url);
 
             // Выполняем запрос асинхронно
-            call.enqueue(new Callback<>() {
+            cashStatusCall.enqueue(new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<OrderResponse> call, @NonNull Response<OrderResponse> response) {
+                    if (!FinishStatusCallbackGuard.shouldApply(isAdded(), call.isCanceled())) {
+                        return;
+                    }
                     if (response.isSuccessful() && response.body() != null) {
                         // Получаем объект OrderResponse из успешного ответа
                         OrderResponse orderResponse = response.body();
@@ -2122,6 +2140,9 @@ public class FinishSeparateFragment extends Fragment {
 
                 @Override
                 public void onFailure(@NonNull Call<OrderResponse> call, @NonNull Throwable t) {
+                    if (call.isCanceled()) {
+                        return;
+                    }
                     FirebaseCrashlytics.getInstance().recordException(t);
                     if (!isAdded() || context == null || shouldIgnoreStatusPollingUi()) {
                         return;
@@ -4556,6 +4577,7 @@ public class FinishSeparateFragment extends Fragment {
         if (retrofitCall != null && !retrofitCall.isCanceled()) {
             retrofitCall.cancel(); // Отмена вызова Retrofit
         }
+        cancelCashStatusCall();
         if (wfpStatusCheckCall != null && !wfpStatusCheckCall.isCanceled()) {
             wfpStatusCheckCall.cancel();
         }
