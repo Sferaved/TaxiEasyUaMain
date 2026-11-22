@@ -80,12 +80,47 @@ public final class PaymentSessionHelper {
         return "pay_error".equals(String.valueOf(flag));
     }
 
-    public static boolean hasPaymentFailedForOrder(@Nullable String orderUid) {
-        if (orderUid == null || orderUid.isEmpty()) {
-            return hasKnownPaymentFailure();
+    @Nullable
+    public static String getFailedOrderUid() {
+        Object value = sharedPreferencesHelperMain.getValue(KEY_FAILED_ORDER_UID, "");
+        String uid = value != null ? String.valueOf(value) : "";
+        if (uid.isEmpty() || "null".equals(uid)) {
+            return null;
         }
-        String failedUid = String.valueOf(sharedPreferencesHelperMain.getValue(KEY_FAILED_ORDER_UID, ""));
-        return orderUid.equals(failedUid) || hasKnownPaymentFailure();
+        return uid;
+    }
+
+    /**
+     * Ошибка оплаты относится только к своему uid.
+     * Глобальный pay_error без совпадения uid не вешаем на чужой/новый заказ (Mantis #124).
+     */
+    public static boolean hasPaymentFailedForOrder(@Nullable String orderUid) {
+        if (!hasKnownPaymentFailure()) {
+            return false;
+        }
+        if (orderUid == null || orderUid.isEmpty()) {
+            return true;
+        }
+        String failedUid = getFailedOrderUid();
+        return failedUid != null && orderUid.equals(failedUid);
+    }
+
+    /** Чистая проверка для unit-тестов без SharedPreferences. */
+    public static boolean failureMatchesOrder(
+            boolean payErrorFlag,
+            @Nullable String failedUid,
+            @Nullable String orderUid
+    ) {
+        if (!payErrorFlag) {
+            return false;
+        }
+        if (orderUid == null || orderUid.isEmpty()) {
+            return true;
+        }
+        if (failedUid == null || failedUid.isEmpty() || "null".equals(failedUid)) {
+            return false;
+        }
+        return orderUid.equals(failedUid);
     }
 
     /** Uid карточного заказа для перезаказа за готівку (переживает onResume CacheOrderFragment). */

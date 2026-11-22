@@ -457,6 +457,11 @@ public class CentrifugoManager {
                                     ExecutionStatusViewModel.clearWalletAddCostAppliedUid();
                                 }
                             }
+                            // Новый заказ: не тащим pay_error / Declined со старого uid (Mantis #124).
+                            if (!treatAsSurchargeComplete) {
+                                PaymentSessionHelper.clearPaymentFailed();
+                                PendingTransactionHelper.clear();
+                            }
                             boolean clearAddCostGate = treatAsSurchargeComplete
                                     && walletHold
                                     && (addCostInFlight

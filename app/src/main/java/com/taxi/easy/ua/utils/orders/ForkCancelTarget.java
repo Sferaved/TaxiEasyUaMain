@@ -61,6 +61,8 @@ public final class ForkCancelTarget {
     /**
      * Номер, который можно записать как активный заказ.
      * Канонический uid из поля uid важнее номера ноги в dispatching_order_uid.
+     * Без известной пары вилки статус-poll не должен подменять hold на Vod-ногу
+     * (Mantis #124: ложный экран оплаты / ложная отмена).
      */
     @NonNull
     public static String statusUidToAdopt(
@@ -79,10 +81,24 @@ public final class ForkCancelTarget {
         if (!dispatch.isEmpty() && !partner.isEmpty() && dispatch.equals(partner)) {
             return active;
         }
-        if (!canonical.isEmpty() && !canonical.equals(partner)) {
+        // Явное пересоздание карточной ноги в известной вилке (не hold→Vod без пары).
+        if (!active.isEmpty() && !partner.isEmpty()) {
+            String candidate = !canonical.isEmpty() ? canonical : dispatch;
+            if (!candidate.isEmpty()
+                    && !candidate.equals(active)
+                    && !candidate.equals(partner)) {
+                return candidate;
+            }
+            return active;
+        }
+        // Нет double: оставляем активный hold — status body может нести Vod-ногу после fork recreate.
+        if (!active.isEmpty()) {
+            return active;
+        }
+        if (!canonical.isEmpty()) {
             return canonical;
         }
-        if (!dispatch.isEmpty() && !dispatch.equals(partner)) {
+        if (!dispatch.isEmpty()) {
             return dispatch;
         }
         return active;

@@ -52,4 +52,12 @@ public class ForkCancelTargetTest {
         String recreated = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         assertEquals(recreated, ForkCancelTarget.statusUidToAdopt(card, cash, recreated, recreated));
     }
+
+    @Test
+    public void holdUid_notReplacedByVodLegWithoutForkPartner() {
+        String hold = "88e4f94ffac34c54b250c6b0a971f924";
+        String vodLeg = "36257ff8cfe54284a5dd0f85052ee597";
+        assertEquals(hold, ForkCancelTarget.statusUidToAdopt(hold, "", vodLeg, vodLeg));
+        assertEquals(hold, ForkCancelTarget.statusUidToAdopt(hold, null, vodLeg, vodLeg));
+    }
 }

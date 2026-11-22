@@ -1939,13 +1939,31 @@ public class FinishSeparateFragment extends Fragment {
             PendingTransactionHelper.consumePendingDeclined(context, null);
             return;
         }
-        String orderUid = MainActivity.uid;
-        if (orderUid == null || orderUid.isEmpty()) {
-            orderUid = ExecutionStatusViewModel.getPersistedActiveUid();
+        if (!PaymentSessionHelper.hasKnownPaymentFailure()) {
+            return;
         }
-        if (PaymentSessionHelper.hasKnownPaymentFailure()) {
-            PaymentDeclinedUiHelper.tryPresentDeclinedUi(context, orderUid);
+        String failedUid = PaymentSessionHelper.getFailedOrderUid();
+        if (failedUid == null || failedUid.isEmpty()) {
+            PaymentSessionHelper.clearPaymentFailed();
+            return;
         }
+        String activeUid = MainActivity.uid;
+        if (activeUid == null || activeUid.isEmpty()) {
+            activeUid = ExecutionStatusViewModel.getPersistedActiveUid();
+        }
+        String doubleUid = MainActivity.uid_Double;
+        if (doubleUid == null || doubleUid.isEmpty()) {
+            doubleUid = ExecutionStatusViewModel.getPersistedDoubleUid();
+        }
+        boolean matchesActive = failedUid.equals(activeUid)
+                || (!TextUtils.isEmpty(doubleUid) && failedUid.equals(doubleUid));
+        if (!matchesActive) {
+            // Сбой оплаты прошлого заказа не показываем на карте/новом заказе (Mantis #124).
+            PaymentSessionHelper.clearPaymentFailed();
+            PendingTransactionHelper.clear();
+            return;
+        }
+        PaymentDeclinedUiHelper.tryPresentDeclinedUi(context, failedUid);
     }
 
     public static boolean cancelFromPaymentBottomSheet(@NonNull Context context) {
