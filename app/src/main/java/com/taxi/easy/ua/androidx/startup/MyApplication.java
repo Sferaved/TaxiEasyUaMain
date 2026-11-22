@@ -148,6 +148,11 @@ public class MyApplication extends MultiDexApplication {
                 } catch (Exception mantisCacheError) {
                     Logger.e(this, TAG, "Mantis config cache skipped: " + mantisCacheError.getMessage());
                 }
+                try {
+                    helper.fetchTelegramBotTokenBlocking();
+                } catch (Exception telegramCacheError) {
+                    Logger.e(this, TAG, "Telegram bot token cache skipped: " + telegramCacheError.getMessage());
+                }
             } catch (Exception e) {
                 Logger.e(this, TAG, "Async initialization failed: " + e);
                 FirebaseCrashlytics.getInstance().recordException(e);

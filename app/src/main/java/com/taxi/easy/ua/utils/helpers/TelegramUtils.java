@@ -1,11 +1,16 @@
 package com.taxi.easy.ua.utils.helpers;
 
+import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.utils.exit.CrashScreenLauncher;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.io.File;
@@ -41,6 +46,21 @@ public class TelegramUtils {
     }
 
     private static void loadBotToken(BotTokenCallback callback) {
+        Context context = safeAppContext();
+        String cached = context != null ? TelegramBotTokenStore.read(context.getFilesDir()) : null;
+        if (cached != null && !cached.isEmpty()) {
+            callback.onToken(cached);
+            return;
+        }
+        // Экран «Упс» — отдельный процесс: если кэш ещё пуст (токен не успели
+        // скачать при старте), берём bot_token из Firebase здесь же, синхронно.
+        if (CrashScreenLauncher.isAnrProcess()) {
+            String token = fetchBotTokenBlockingFromFirebase();
+            if (token != null) {
+                callback.onToken(token);
+            }
+            return;
+        }
         FirebaseFirestore.getInstance()
                 .collection("keys")
                 .document("telegram_bot")
@@ -51,10 +71,60 @@ public class TelegramUtils {
                         Log.e(TAG, "keys/telegram_bot field bot_token is missing");
                         return;
                     }
-                    callback.onToken(token.trim());
+                    String trimmed = token.trim();
+                    cacheBotToken(trimmed);
+                    callback.onToken(trimmed);
                 })
                 .addOnFailureListener(e ->
                         Log.e(TAG, "Failed to load keys/telegram_bot: " + e.getMessage()));
+    }
+
+    @Nullable
+    private static String fetchBotTokenBlockingFromFirebase() {
+        try {
+            DocumentSnapshot snapshot = Tasks.await(
+                    FirebaseFirestore.getInstance()
+                            .collection("keys")
+                            .document("telegram_bot")
+                            .get(),
+                    20,
+                    TimeUnit.SECONDS
+            );
+            String token = snapshot != null ? snapshot.getString("bot_token") : null;
+            if (token == null || token.trim().isEmpty()) {
+                Log.e(TAG, "Crash-screen Firebase: keys/telegram_bot.bot_token is missing");
+                return null;
+            }
+            String trimmed = token.trim();
+            cacheBotToken(trimmed);
+            Log.d(TAG, "Crash-screen Firebase: telegram bot token loaded");
+            return trimmed;
+        } catch (Exception e) {
+            Log.e(TAG, "Crash-screen Firebase telegram_bot fetch failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static void cacheBotToken(@NonNull String token) {
+        Context context = safeAppContext();
+        if (context == null) {
+            return;
+        }
+        try {
+            TelegramBotTokenStore.write(context.getFilesDir(), token);
+        } catch (Exception e) {
+            Log.w(TAG, "Telegram bot token cache skipped: " + e.getMessage());
+        }
+    }
+
+    @Nullable
+    private static Context safeAppContext() {
+        try {
+            Context context = MyApplication.getContext();
+            return context == null ? null : context.getApplicationContext();
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     private interface BotTokenCallback {

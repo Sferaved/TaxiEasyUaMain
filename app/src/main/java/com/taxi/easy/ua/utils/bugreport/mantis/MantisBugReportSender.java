@@ -98,6 +98,9 @@ public final class MantisBugReportSender {
                                                   @Nullable File logFile) throws Exception {
         long logFileSizeKb = getLogFileSizeKb(logFile);
 
+        String logPath = (logFile != null && logFile.exists() && logFile.length() > 0)
+                ? logFile.getAbsolutePath()
+                : null;
         try {
             Result result = send(context, appLabel, versionName, problemSummary, fullDescription, logFile);
             String telegramMessage = buildTelegramNotification(
@@ -110,7 +113,12 @@ public final class MantisBugReportSender {
                     result.issueId,
                     result.issueUrl
             );
-            TelegramUtils.sendBugReportCreatedNotification(telegramMessage);
+            // Экран «Упс» и обычный репорт: PAS шлёт в Telegram сам, с логом устройства.
+            if (logPath != null) {
+                TelegramUtils.sendErrorToTelegram(telegramMessage, logPath);
+            } else {
+                TelegramUtils.sendBugReportCreatedNotification(telegramMessage);
+            }
             return new DeliveryResult(true, result.issueId, logFileSizeKb);
         } catch (Exception mantisError) {
             Log.w(TAG, "Mantis unavailable, fallback to legacy Telegram: " + mantisError.getMessage());
@@ -124,9 +132,6 @@ public final class MantisBugReportSender {
                     logsLabel,
                     formatLogFileSize(logFile, noLogsLabel)
             );
-            String logPath = (logFile != null && logFile.exists() && logFile.length() > 0)
-                    ? logFile.getAbsolutePath()
-                    : null;
             TelegramUtils.sendErrorToTelegram(legacyMessage, logPath);
             return new DeliveryResult(false, -1, logFileSizeKb);
         }
