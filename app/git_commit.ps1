@@ -269,7 +269,7 @@ $pushConfirm = 'y'
 
 if ($pushConfirm -eq 'y' -or $pushConfirm -eq 'Y') {
     Write-Host "Pushing commit..." -ForegroundColor Yellow
-    git push
+    git -c credential.helper=manager push
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERROR: git push failed" -ForegroundColor Red
@@ -278,7 +278,7 @@ if ($pushConfirm -eq 'y' -or $pushConfirm -eq 'Y') {
 
     if (-not $tagExists) {
         Write-Host "Pushing tag..." -ForegroundColor Yellow
-        git push origin $tagName
+        git -c credential.helper=manager push origin $tagName
         if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: tag push failed" -ForegroundColor Red
             exit 1
